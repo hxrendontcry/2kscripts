@@ -175,6 +175,10 @@ local PRESET_GAMES = {
     [118805555015549] = {
         name = "+1 ของรางวัลที่จะหลอม (Loot to Forge)",
         scriptUrl = GITHUB_BASE .. "LootToForge.luau"
+    },
+    [123720558354386] = {
+        name = "Build the Pyramid! 🏜️",
+        scriptUrl = GITHUB_BASE .. "BuildThePyramid.luau"
     }
 }
 

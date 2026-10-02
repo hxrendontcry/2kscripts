@@ -16,5 +16,14 @@
     "status": "active",
     "version": "1.0",
     "description": "Auto Sea Wave Sniping, Auto Place & Hatch Eggs, Auto Rebirth, Infinite Power Training"
+  },
+  {
+    "id": "build-the-pyramid",
+    "name": "Build the Pyramid! 🏜️",
+    "placeIds": [123720558354386],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/BuildThePyramid.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "Auto Quarry Pickup, Auto Build Pyramid, Auto Gym Bench Press, Auto Upgrades & Anti-Fall"
   }
 ]
