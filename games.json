@@ -19,7 +19,7 @@
   },
   {
     "id": "build-the-pyramid",
-    "name": "Build the Pyramid! 🏜️",
+    "name": "Build the Pyramid!",
     "placeIds": [123720558354386],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/BuildThePyramid.luau",
     "status": "active",
