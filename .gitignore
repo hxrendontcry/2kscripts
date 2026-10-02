@@ -1,0 +1,4 @@
+# Keep raw source code confidential on local machine
+src/
+*.bak
+*.tmp

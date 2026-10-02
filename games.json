@@ -1,0 +1,20 @@
+[
+  {
+    "id": "loot-to-forge",
+    "name": "+1 ของรางวัลที่จะหลอม (Loot to Forge)",
+    "placeIds": [118805555015549],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/LootToForge.luau",
+    "status": "active",
+    "version": "2.1",
+    "description": "ออโต้ฟาร์มพลัง, ตีด่านอัตโนมัติ, หลอมไอเทม, ขายหินตีบวกแยกเกรด"
+  },
+  {
+    "id": "open-sea",
+    "name": "Open Sea For Animals!",
+    "placeIds": [88047783411976],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/OpenSeaHub.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "Auto Sea Wave Sniping, Auto Place & Hatch Eggs, Auto Rebirth, Infinite Power Training"
+  }
+]
