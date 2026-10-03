@@ -249,17 +249,131 @@ local LOCATIONS = {
     Leaderboards = Vector3.new(-60.0, 4.0, 50.0)
 }
 
--- Gym Bench Multiplier Stations
-local GYM_STATIONS = {
-    ["1x Bench"]   = Vector3.new(-12.75, 4.0, -112.0),
-    ["2x Bench"]   = Vector3.new(-32.0, 4.0, -112.0),
-    ["5x Bench"]   = Vector3.new(-52.0, 4.0, -112.0),
-    ["10x Bench"]  = Vector3.new(-72.0, 4.0, -112.0),
-    ["25x Bench"]  = Vector3.new(-92.0, 4.0, -112.0),
-    ["50x Bench"]  = Vector3.new(-112.0, 4.0, -112.0),
-    ["100x Bench"] = Vector3.new(-132.0, 4.0, -112.0),
-    ["250x Bench"] = Vector3.new(-152.0, 4.0, -112.0)
+-- Gym Stations Definitions (Accurate coordinates & requirements)
+local GYM_BENCH_STATIONS = {
+    ["Auto (แท่นสูงสุดที่ปลดล็อค)"]            = { id = "auto", req = 0,      pos = Vector3.new(-57.83, 1.91, -52.59) },
+    ["Station 1 (1x Multiplier - ฟรี)"]        = { id = "1",    req = 0,      pos = Vector3.new(-57.83, 1.91, -52.59) },
+    ["Station 2 (2x Multiplier - 1 พีระมิด)"]  = { id = "2",    req = 1,      pos = Vector3.new(-57.83, 1.91, -87.09) },
+    ["Station 3 (5x Multiplier - 3 พีระมิด)"]  = { id = "3",    req = 3,      pos = Vector3.new(-57.83, 1.91, -121.34) },
+    ["Station 4 (10x Multiplier - 8 พีระมิด)"] = { id = "4",    req = 8,      pos = Vector3.new(-57.77, 1.91, -155.94) },
+    ["Station 5 (25x Multiplier - 15 พีระมิด)"]= { id = "5",    req = 15,     pos = Vector3.new(32.87, 1.91, -38.84) },
+    ["Station 6 (50x Multiplier - 25 พีระมิด)"]= { id = "6",    req = 25,     pos = Vector3.new(32.70, 1.91, -73.34) },
+    ["Station 7 (75x Multiplier - 50 พีระมิด)"]= { id = "7",    req = 50,     pos = Vector3.new(32.86, 2.14, -108.29) },
+    ["Station 8 (100x Multiplier - 100 พีระมิด)"]= { id = "8",  req = 100,    pos = Vector3.new(32.86, 2.14, -142.74) },
+    ["Station 9 (250x Multiplier - เกมพาส VIP)"]= { id = "9",   req = 999999, pos = Vector3.new(-3.50, 3.91, -173.16) },
 }
+
+local GYM_TREADMILL_STATIONS = {
+    ["Auto (แท่นสูงสุดที่ปลดล็อค)"]            = { id = "auto", req = 0,      pos = Vector3.new(-58.07, 3.31, -38.39) },
+    ["Treadmill 1 (1x Multiplier - ฟรี)"]       = { id = "1",    req = 0,      pos = Vector3.new(-58.07, 3.31, -38.39) },
+    ["Treadmill 2 (2x Multiplier - 1 พีระมิด)"] = { id = "2",    req = 1,      pos = Vector3.new(-58.07, 3.31, -72.89) },
+    ["Treadmill 3 (5x Multiplier - 3 พีระมิด)"] = { id = "3",    req = 3,      pos = Vector3.new(-58.13, 3.31, -107.14) },
+    ["Treadmill 4 (10x Multiplier - 8 พีระมิด)"]= { id = "4",    req = 8,      pos = Vector3.new(-57.71, 3.31, -141.74) },
+    ["Treadmill 5 (25x Multiplier - 15 พีระมิด)"]= { id = "5",   req = 15,     pos = Vector3.new(33.03, 3.60, -53.04) },
+    ["Treadmill 6 (50x Multiplier - 25 พีระมิด)"]= { id = "6",   req = 25,     pos = Vector3.new(32.95, 3.96, -87.54) },
+    ["Treadmill 7 (75x Multiplier - 50 พีระมิด)"]= { id = "7",   req = 50,     pos = Vector3.new(32.78, 4.01, -122.49) },
+    ["Treadmill 8 (100x Multiplier - 100 พีระมิด)"]= { id = "8", req = 100,    pos = Vector3.new(32.78, 4.01, -156.94) },
+    ["Treadmill 9 (250x Multiplier - เกมพาส VIP)"]= { id = "9",  req = 999999, pos = Vector3.new(-21.70, 6.55, -173.61) },
+}
+
+local function getBestBenchStationId()
+    local pyrs = tonumber(LocalPlayer:GetAttribute("Pyramids")) or 0
+    local hasPass = LocalPlayer:GetAttribute("OwnsPass_gymUnlock250x") == true
+    if hasPass then return "9" end
+    if pyrs >= 100 then return "8" end
+    if pyrs >= 50  then return "7" end
+    if pyrs >= 25  then return "6" end
+    if pyrs >= 15  then return "5" end
+    if pyrs >= 8   then return "4" end
+    if pyrs >= 3   then return "3" end
+    if pyrs >= 1   then return "2" end
+    return "1"
+end
+
+local function getBestTreadmillStationId()
+    return getBestBenchStationId()
+end
+
+local function invokeGymRF(methodName, ...)
+    local KnitFolder = ReplicatedStorage:FindFirstChild("Packages") and ReplicatedStorage.Packages:FindFirstChild("_Index")
+    local knitServ = KnitFolder and KnitFolder:FindFirstChild("sleitnick_knit@1.7.0") and KnitFolder["sleitnick_knit@1.7.0"].knit.Services
+    if knitServ and knitServ:FindFirstChild("GymService") then
+        local rfFolder = knitServ.GymService:FindFirstChild("RF")
+        local rf = rfFolder and rfFolder:FindFirstChild(methodName)
+        if rf and rf:IsA("RemoteFunction") then
+            local ok, res = pcall(function(...) return rf:InvokeServer(...) end, ...)
+            if ok then return res end
+        end
+    end
+    local okK, Knit = pcall(require, ReplicatedStorage.Packages.Knit)
+    if okK and Knit and Knit.GetService then
+        local okG, gs = pcall(Knit.GetService, "GymService")
+        if okG and gs and gs[methodName] then
+            local okCall, res = pcall(function(...) return gs[methodName](gs, ...):expect() end, ...)
+            if okCall then return res end
+        end
+    end
+    return nil
+end
+
+local function bypassAllGymPrompts()
+    local gymFolder = workspace:FindFirstChild("Gym")
+    if not gymFolder then return end
+    for _, inst in ipairs(gymFolder:GetDescendants()) do
+        if inst:IsA("ProximityPrompt") then
+            inst.MaxActivationDistance = 50
+            inst.HoldDuration = 0
+            inst.RequiresLineOfSight = false
+            inst.Enabled = true
+        end
+    end
+end
+
+local function startBenchSession(targetId)
+    if not targetId or targetId == "auto" then
+        targetId = getBestBenchStationId()
+    end
+
+    local gymFolder = workspace:FindFirstChild("Gym")
+    local sFolder = gymFolder and gymFolder:FindFirstChild(targetId)
+    if not sFolder then return false end
+
+    local bench = sFolder:FindFirstChild("Benchpress")
+    local promptPart = bench and bench:FindFirstChild("PromptPart")
+    local prompt = promptPart and promptPart:FindFirstChildOfClass("ProximityPrompt")
+
+    local hum, hrp = getCharHrp()
+    if not hrp or not promptPart then return false end
+
+    if prompt then
+        prompt.MaxActivationDistance = 50
+        prompt.HoldDuration = 0
+        prompt.RequiresLineOfSight = false
+        prompt.Enabled = true
+    end
+
+    hrp.Velocity = Vector3.zero
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.CFrame = promptPart.CFrame + Vector3.new(0, 1.5, 0)
+    task.wait(0.25)
+
+    if prompt and fireproximityprompt then
+        fireproximityprompt(prompt)
+    end
+
+    task.wait(0.1)
+    invokeGymRF("StartBench", targetId)
+    return true
+end
+
+local function stopBenchSession()
+    invokeGymRF("StopBench")
+    local hum, hrp = getCharHrp()
+    if hum then
+        hum.PlatformStand = false
+        pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+    end
+end
 
 -- Character Helpers
 local function getCharHrp()
@@ -399,9 +513,11 @@ local State = {
     InstantPlaceRange      = true,
     
     -- Auto Gym & Training
-    AutoGymTrain           = false,
-    SelectedGymStation     = "1x Bench",
-    AutoSwitchBestBench    = true,
+    AutoGymTrain             = false,
+    SelectedGymStation       = "Auto (แท่นสูงสุดที่ปลดล็อค)",
+    AutoTreadmillTrain       = false,
+    SelectedTreadmillStation = "Auto (แท่นสูงสุดที่ปลดล็อค)",
+    BypassGymPrompt          = true,
 
     -- Auto Upgrades & Rewards
     AutoUpgradePickup      = false,
@@ -777,60 +893,226 @@ end)
 -- ─────────────────────────────────────────────────────────────
 -- TAB 3: ยิม & เทรนพลัง (GYM & STRENGTH)
 -- ─────────────────────────────────────────────────────────────
-TabGym:Section({ Title = "ฝึกพลังกล้ามเนื้อ (Strength Training)", Icon = "dumbbell" })
+TabGym:Section({ Title = "สถานะการฝึกซ้อมสด (Live Gym Stats)", Icon = "activity" })
+
+local gymStatParagraph = TabGym:Paragraph({
+    Title = "กำลังโหลดข้อมูลสถานะยิม...",
+    Desc = "รอซิงค์ระดับ Strength & Speed จากเซิร์ฟเวอร์",
+    Icon = "chart-column"
+})
+
+task.spawn(function()
+    while task.wait(1.0) do
+        if not _G.TwoSkiPyramidRunning or _G.TwoSkiActivePyramidToken ~= myToken then break end
+        pcall(function()
+            local ls = LocalPlayer:FindFirstChild("leaderstats")
+            local str = (ls and ls:FindFirstChild("Strength") and ls.Strength.Value) or LocalPlayer:GetAttribute("StrengthLevel") or 0
+            local spd = (ls and ls:FindFirstChild("Speed") and ls.Speed.Value) or LocalPlayer:GetAttribute("SpeedLevel") or 0
+            local strMul = LocalPlayer:GetAttribute("StrengthMultiplier") or 1
+            local spdMul = LocalPlayer:GetAttribute("SpeedMultiplier") or 1
+            local benchSt = LocalPlayer:GetAttribute("BenchStation")
+            local benchStatus = benchSt and string.format("กำลังฝึกแท่น %s (%sx)", tostring(benchSt), tostring(strMul)) or "ไม่ได้ฝึก (Idle)"
+
+            gymStatParagraph:SetTitle(string.format("Strength: Lv.%s (คูณ %sx)  |  Speed: Lv.%s (คูณ %sx)", tostring(str), tostring(strMul), tostring(spd), tostring(spdMul)))
+            gymStatParagraph:SetDesc(string.format("สถานะแท่น Bench: %s  |  แท่นที่ระบบแนะนำ: แท่น %s", benchStatus, getBestBenchStationId()))
+        end)
+    end
+end)
+
+TabGym:Section({ Title = "ฝึกพลังกล้ามเนื้อ (Bench Press Strength)", Icon = "dumbbell" })
 
 TabGym:Toggle({
     Title = "ออโต้เทรนยกน้ำหนักในยิม (Auto Bench Press)",
-    Desc = "วาร์ปไปแท่นยกน้ำหนักแล้วเริ่มเทรนพลัง Strength อัตโนมัติ",
+    Desc = "วาร์ปไปแท่นยกน้ำหนัก ปลดล็อคระยะกด และเริ่มเทรนพลัง Strength อัตโนมัติ",
     Icon = "activity",
     Value = State.AutoGymTrain,
     Callback = function(val)
         State.AutoGymTrain = val
         if val then
+            State.AutoTreadmillTrain = false
             task.spawn(function()
-                local targetPos = GYM_STATIONS[State.SelectedGymStation] or LOCATIONS.Gym
-                safeTeleport(targetPos)
-                task.wait(0.3)
-                local gs = getRF("GymService", "StartBench")
-                if gs then pcall(function() gs:StartBench() end) end
+                local stationInfo = GYM_BENCH_STATIONS[State.SelectedGymStation]
+                local targetId = (stationInfo and stationInfo.id) or "auto"
+                startBenchSession(targetId)
+                WindUI:Notify({ Title = "2K SCRIPT", Content = "เริ่มออโต้เทรนยกน้ำหนักเรียบร้อย!" })
             end)
         else
-            local gs = getRF("GymService", "StopBench")
-            if gs then pcall(function() gs:StopBench() end) end
+            stopBenchSession()
+            WindUI:Notify({ Title = "2K SCRIPT", Content = "หยุดยกน้ำหนักเรียบร้อย!" })
         end
     end
 })
 
 TabGym:Dropdown({
     Title = "เลือกแท่นยกน้ำหนัก (Bench Multiplier Station)",
+    Desc = "เลือกตัวคูณที่ต้องการ หรือเลือก Auto เพื่อใช้แท่นสูงสุดที่ปลดล็อค",
     Icon = "trending-up",
     Values = {
-        "1x Bench", "2x Bench", "5x Bench", "10x Bench",
-        "25x Bench", "50x Bench", "100x Bench", "250x Bench"
+        "Auto (แท่นสูงสุดที่ปลดล็อค)",
+        "Station 1 (1x Multiplier - ฟรี)",
+        "Station 2 (2x Multiplier - 1 พีระมิด)",
+        "Station 3 (5x Multiplier - 3 พีระมิด)",
+        "Station 4 (10x Multiplier - 8 พีระมิด)",
+        "Station 5 (25x Multiplier - 15 พีระมิด)",
+        "Station 6 (50x Multiplier - 25 พีระมิด)",
+        "Station 7 (75x Multiplier - 50 พีระมิด)",
+        "Station 8 (100x Multiplier - 100 พีระมิด)",
+        "Station 9 (250x Multiplier - เกมพาส VIP)"
     },
     Value = State.SelectedGymStation,
     Callback = function(val)
         State.SelectedGymStation = val
         if State.AutoGymTrain then
-            local targetPos = GYM_STATIONS[val] or LOCATIONS.Gym
-            safeTeleport(targetPos)
-            task.wait(0.2)
-            local gs = getRF("GymService", "StartBench")
-            if gs then pcall(function() gs:StartBench() end) end
+            local stationInfo = GYM_BENCH_STATIONS[val]
+            local targetId = (stationInfo and stationInfo.id) or "auto"
+            stopBenchSession()
+            task.wait(0.3)
+            startBenchSession(targetId)
         end
     end
 })
 
 TabGym:Button({
     Title = "หยุดยกน้ำหนักทันที (Stop Bench Press)",
+    Desc = "หยุดฝึกและปลดล็อคการควบคุมตัวละครทันที",
     Icon = "square",
     Callback = function()
         State.AutoGymTrain = false
-        local gs = getRF("GymService", "StopBench")
-        if gs then pcall(function() gs:StopBench() end) end
+        stopBenchSession()
         WindUI:Notify({ Title = "2K SCRIPT", Content = "หยุดเทรนพลังเรียบร้อย!" })
     end
 })
+
+TabGym:Section({ Title = "ฝึกความเร็ววิ่งลู่ (Treadmill Speed Training)", Icon = "zap" })
+
+TabGym:Toggle({
+    Title = "ออโต้เทรนวิ่งลู่เพิ่ม Speed (Auto Treadmill Speed)",
+    Desc = "วาร์ปไปแท่นลู่วิ่งและฝึกเพิ่มความเร็วตัวละครอัตโนมัติ",
+    Icon = "footprints",
+    Value = State.AutoTreadmillTrain,
+    Callback = function(val)
+        State.AutoTreadmillTrain = val
+        if val then
+            State.AutoGymTrain = false
+            stopBenchSession()
+            WindUI:Notify({ Title = "2K SCRIPT", Content = "เริ่มออโต้เทรนวิ่งลู่เรียบร้อย!" })
+        end
+    end
+})
+
+TabGym:Dropdown({
+    Title = "เลือกแท่นลู่วิ่ง (Treadmill Multiplier Station)",
+    Desc = "เลือกระดับตัวคูณลู่วิ่ง หรือเลือก Auto เพื่อใช้ระดับสูงสุด",
+    Icon = "gauge",
+    Values = {
+        "Auto (แท่นสูงสุดที่ปลดล็อค)",
+        "Treadmill 1 (1x Multiplier - ฟรี)",
+        "Treadmill 2 (2x Multiplier - 1 พีระมิด)",
+        "Treadmill 3 (5x Multiplier - 3 พีระมิด)",
+        "Treadmill 4 (10x Multiplier - 8 พีระมิด)",
+        "Treadmill 5 (25x Multiplier - 15 พีระมิด)",
+        "Treadmill 6 (50x Multiplier - 25 พีระมิด)",
+        "Treadmill 7 (75x Multiplier - 50 พีระมิด)",
+        "Treadmill 8 (100x Multiplier - 100 พีระมิด)",
+        "Treadmill 9 (250x Multiplier - เกมพาส VIP)"
+    },
+    Value = State.SelectedTreadmillStation,
+    Callback = function(val)
+        State.SelectedTreadmillStation = val
+    end
+})
+
+TabGym:Button({
+    Title = "หยุดวิ่งลู่ทันที (Stop Treadmill Speed)",
+    Desc = "หยุดฝึกวิ่งลู่และคืนการเคลื่อนไหวปกติ",
+    Icon = "square",
+    Callback = function()
+        State.AutoTreadmillTrain = false
+        WindUI:Notify({ Title = "2K SCRIPT", Content = "หยุดเทรนวิ่งลู่เรียบร้อย!" })
+    end
+})
+
+TabGym:Section({ Title = "ปลดล็อค & ทางลัด (Gym Bypass & Utilities)", Icon = "unlock" })
+
+TabGym:Toggle({
+    Title = "ปลดล็อคระยะกด ProximityPrompt ทั่วแมพ (Bypass Prompt Range)",
+    Desc = "ขยายระยะกดปุ่มยิมและแท่นต่างๆ ให้กดได้ทันทีโดยไม่ต้องรอหลอดโหลด",
+    Icon = "maximize-2",
+    Value = State.BypassGymPrompt,
+    Callback = function(val)
+        State.BypassGymPrompt = val
+        if val then
+            bypassAllGymPrompts()
+            WindUI:Notify({ Title = "2K SCRIPT", Content = "ปลดล็อคระยะกด ProximityPrompt เรียบร้อย!" })
+        end
+    end
+})
+
+TabGym:Button({
+    Title = "หยุดการฝึกทั้งหมดทันที (Emergency Stop Training)",
+    Desc = "หยุดการฝึกทั้งหมดยกน้ำหนักและวิ่งลู่ทันที",
+    Icon = "octagon-x",
+    Callback = function()
+        State.AutoGymTrain = false
+        State.AutoTreadmillTrain = false
+        stopBenchSession()
+        WindUI:Notify({ Title = "2K SCRIPT", Content = "หยุดการฝึกทั้งหมดเรียบร้อย!" })
+    end
+})
+
+-- Continuous Auto Gym Training Background Loop
+task.spawn(function()
+    while task.wait(1.5) do
+        if not _G.TwoSkiPyramidRunning or _G.TwoSkiActivePyramidToken ~= myToken then break end
+        
+        -- Prompt Bypass Loop
+        if State.BypassGymPrompt then
+            pcall(bypassAllGymPrompts)
+        end
+
+        -- Bench Press Loop
+        if State.AutoGymTrain then
+            pcall(function()
+                local stationInfo = GYM_BENCH_STATIONS[State.SelectedGymStation]
+                local targetId = (stationInfo and stationInfo.id) or "auto"
+                if targetId == "auto" then
+                    targetId = getBestBenchStationId()
+                end
+
+                local currentStation = LocalPlayer:GetAttribute("BenchStation")
+                if not currentStation or tostring(currentStation) ~= tostring(targetId) then
+                    startBenchSession(targetId)
+                end
+            end)
+        end
+
+        -- Treadmill Speed Loop
+        if State.AutoTreadmillTrain then
+            pcall(function()
+                local stationInfo = GYM_TREADMILL_STATIONS[State.SelectedTreadmillStation]
+                local targetId = (stationInfo and stationInfo.id) or "auto"
+                if targetId == "auto" then
+                    targetId = getBestTreadmillStationId()
+                end
+
+                local gymFolder = workspace:FindFirstChild("Gym")
+                local folder = gymFolder and gymFolder:FindFirstChild(targetId)
+                local treadmill = folder and folder:FindFirstChild("Treadmill")
+                local hitbox = treadmill and treadmill:FindFirstChild("Hitbox")
+
+                local hum, hrp = getCharHrp()
+                if hrp and hitbox then
+                    local targetCFrame = hitbox.CFrame + Vector3.new(0, 2.5, 0)
+                    if (hrp.Position - hitbox.Position).Magnitude > 8 then
+                        hrp.Velocity = Vector3.zero
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        hrp.CFrame = targetCFrame
+                    end
+                end
+            end)
+        end
+    end
+end)
 
 -- ─────────────────────────────────────────────────────────────
 -- TAB 4: อัปเกรด & โค้ดฟรี (UPGRADES & CODES)
@@ -1078,6 +1360,31 @@ TabTeleport:Button({
     Callback = function() safeTeleport(LOCATIONS.Gym) end
 })
 
+TabTeleport:Dropdown({
+    Title = "วาร์ปไปแท่นยิมเฉพาะเจาะจง (Teleport to Specific Gym Station)",
+    Desc = "เลือกแท่นที่ต้องการวาร์ปไปหน้าแท่นยกน้ำหนักทันที",
+    Icon = "dumbbell",
+    Values = {
+        "Station 1 (1x Multiplier - ฟรี)",
+        "Station 2 (2x Multiplier - 1 พีระมิด)",
+        "Station 3 (5x Multiplier - 3 พีระมิด)",
+        "Station 4 (10x Multiplier - 8 พีระมิด)",
+        "Station 5 (25x Multiplier - 15 พีระมิด)",
+        "Station 6 (50x Multiplier - 25 พีระมิด)",
+        "Station 7 (75x Multiplier - 50 พีระมิด)",
+        "Station 8 (100x Multiplier - 100 พีระมิด)",
+        "Station 9 (250x Multiplier - เกมพาส VIP)"
+    },
+    Value = "Station 1 (1x Multiplier - ฟรี)",
+    Callback = function(val)
+        local stationInfo = GYM_BENCH_STATIONS[val]
+        if stationInfo and stationInfo.pos then
+            safeTeleport(stationInfo.pos)
+            WindUI:Notify({ Title = "2K SCRIPT", Content = "วาร์ปไป " .. val .. " เรียบร้อย!" })
+        end
+    end
+})
+
 TabTeleport:Button({
     Title = "วาร์ปไป Spawn (จุดเกิด)",
     Icon = "house",
@@ -1166,6 +1473,9 @@ local function saveConfig(name)
         TravelMode = State.TravelMode,
         SelectedGymStation = State.SelectedGymStation,
         AutoGymTrain = State.AutoGymTrain,
+        AutoTreadmillTrain = State.AutoTreadmillTrain,
+        SelectedTreadmillStation = State.SelectedTreadmillStation,
+        BypassGymPrompt = State.BypassGymPrompt,
         AutoUpgradePickup = State.AutoUpgradePickup,
         AutoUpgradePlace = State.AutoUpgradePlace,
         AutoUpgradeRange = State.AutoUpgradeRange,
