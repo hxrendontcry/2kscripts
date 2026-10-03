@@ -1121,6 +1121,23 @@ TabSettings:Dropdown({
     end
 })
 
+TabSettings:Slider({
+    Title = "สเกลขนาดหน้าต่าง UI (UI Scale)",
+    Desc = "ปรับขนาดอัตราส่วนของหน้าต่าง UI ให้พอดีหน้าจอ (70% - 130%)",
+    Icon = "maximize-2",
+    Min = 70,
+    Max = 130,
+    Default = 100,
+    Step = 5,
+    Callback = function(val)
+        pcall(function()
+            if Window and Window.SetScale then
+                Window:SetScale(val / 100)
+            end
+        end)
+    end
+})
+
 TabSettings:Section({ Title = "ความปลอดภัย & ระบบ (System)", Icon = "cpu" })
 
 TabSettings:Toggle({

@@ -152,7 +152,7 @@ function TwoKUI:CreateWindow(config)
     mainFrame.Parent = screenGui
 
     local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 16)
+    mainCorner.CornerRadius = UDim.new(0, 18)
     mainCorner.Parent = mainFrame
 
     -- Cyber Neon Animated Outer Stroke
@@ -171,19 +171,26 @@ function TwoKUI:CreateWindow(config)
     })
     strokeGrad.Parent = mainStroke
 
-    -- Anime Cyber Background Art Overlay
+    -- Anime Cyber Background Art Overlay (Clean generated masterpiece, zero baked UI)
     local bgImage = Instance.new("ImageLabel")
     bgImage.Name = "BackgroundArt"
     bgImage.Size = UDim2.fromScale(1, 1)
     bgImage.Position = UDim2.fromScale(0, 0)
     bgImage.BackgroundTransparency = 1
     bgImage.ScaleType = Enum.ScaleType.Crop
-    bgImage.ImageTransparency = 0.55
+    bgImage.ImageTransparency = 0.18
     bgImage.ZIndex = 1
     bgImage.Parent = mainFrame
 
+    local bgCorner = Instance.new("UICorner")
+    bgCorner.CornerRadius = UDim.new(0, 18)
+    bgCorner.Parent = bgImage
+
     task.spawn(function()
-        local artAsset = ensureAsset("2k_bg_art.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art.png")
+        local artAsset = ensureAsset("2k_bg_art_v2.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art_v2.png")
+        if not artAsset then
+            artAsset = ensureAsset("2k_bg_art.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art.png")
+        end
         if artAsset then
             bgImage.Image = artAsset
         end
@@ -194,10 +201,14 @@ function TwoKUI:CreateWindow(config)
     tintOverlay.Name = "TintOverlay"
     tintOverlay.Size = UDim2.fromScale(1, 1)
     tintOverlay.BackgroundColor3 = Color3.fromHex("#020610")
-    tintOverlay.BackgroundTransparency = 0.35
+    tintOverlay.BackgroundTransparency = 0.50
     tintOverlay.BorderSizePixel = 0
     tintOverlay.ZIndex = 2
     tintOverlay.Parent = mainFrame
+
+    local tintCorner = Instance.new("UICorner")
+    tintCorner.CornerRadius = UDim.new(0, 18)
+    tintCorner.Parent = tintOverlay
 
     -- ─────────────────────────────────────────────────────────
     -- TOPBAR (macOS Dots + 2K Starburst Logo + Controls)
@@ -495,14 +506,23 @@ function TwoKUI:CreateWindow(config)
     contentArea.ZIndex = 4
     contentArea.Parent = mainFrame
 
+    local uiScale = Instance.new("UIScale")
+    uiScale.Scale = 1.0
+    uiScale.Parent = mainFrame
+
     -- Window Object and Collections
     local Window = {
         ScreenGui = screenGui,
         MainFrame = mainFrame,
+        UIScale = uiScale,
         Tabs = {},
         SelectedTab = nil,
         IsOpen = true
     }
+
+    function Window:SetScale(scale)
+        uiScale.Scale = math.clamp(scale, 0.5, 1.5)
+    end
 
     function Window:Toggle()
         self.IsOpen = not self.IsOpen
@@ -550,6 +570,89 @@ function TwoKUI:CreateWindow(config)
     end
     btnMax.MouseButton1Click:Connect(toggleMax)
     dotGreen.MouseButton1Click:Connect(toggleMax)
+
+    -- ─────────────────────────────────────────────────────────
+    -- CORNER RESIZE HANDLE (Interactive Scaler / Resizer)
+    -- ─────────────────────────────────────────────────────────
+    local resizeGrip = Instance.new("TextButton")
+    resizeGrip.Name = "ResizeGrip"
+    resizeGrip.Size = UDim2.fromOffset(28, 28)
+    resizeGrip.Position = UDim2.new(1, -28, 1, -28)
+    resizeGrip.BackgroundTransparency = 1
+    resizeGrip.Text = ""
+    resizeGrip.AutoButtonColor = false
+    resizeGrip.ZIndex = 25
+    resizeGrip.Parent = mainFrame
+
+    -- Aesthetic Cyber Resize Grip Visual Icon
+    local gripVisual = Instance.new("ImageLabel")
+    gripVisual.Name = "GripVisual"
+    gripVisual.Size = UDim2.fromOffset(16, 16)
+    gripVisual.Position = UDim2.new(1, -18, 1, -18)
+    gripVisual.BackgroundTransparency = 1
+    gripVisual.Image = "rbxassetid://10734920536" -- maximize-2 / resize diagonal arrow
+    gripVisual.ImageColor3 = Color3.fromHex("#00E5FF")
+    gripVisual.ImageTransparency = 0.4
+    gripVisual.ZIndex = 26
+    gripVisual.Parent = mainFrame
+
+    local isResizing = false
+    local resizeStartMouse = Vector2.zero
+    local resizeStartSize = Vector2.zero
+
+    resizeGrip.MouseEnter:Connect(function()
+        TweenService:Create(gripVisual, TweenInfo.new(0.15), {
+            ImageColor3 = Color3.fromHex("#00FFFF"),
+            ImageTransparency = 0.0
+        }):Play()
+    end)
+
+    resizeGrip.MouseLeave:Connect(function()
+        if not isResizing then
+            TweenService:Create(gripVisual, TweenInfo.new(0.15), {
+                ImageColor3 = Color3.fromHex("#00E5FF"),
+                ImageTransparency = 0.4
+            }):Play()
+        end
+    end)
+
+    resizeGrip.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            isResizing = true
+            resizeStartMouse = Vector2.new(input.Position.X, input.Position.Y)
+            resizeStartSize = Vector2.new(mainFrame.AbsoluteSize.X, mainFrame.AbsoluteSize.Y)
+            
+            TweenService:Create(gripVisual, TweenInfo.new(0.1), {
+                ImageColor3 = Color3.fromHex("#00FFFF"),
+                ImageTransparency = 0.0
+            }):Play()
+
+            local conn
+            conn = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    isResizing = false
+                    TweenService:Create(gripVisual, TweenInfo.new(0.2), {
+                        ImageColor3 = Color3.fromHex("#00E5FF"),
+                        ImageTransparency = 0.4
+                    }):Play()
+                    if conn then conn:Disconnect() end
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local deltaX = input.Position.X - resizeStartMouse.X
+            local deltaY = input.Position.Y - resizeStartMouse.Y
+
+            local newW = math.clamp(resizeStartSize.X + deltaX, 620, 1400)
+            local newH = math.clamp(resizeStartSize.Y + deltaY, 390, 900)
+
+            mainFrame.Size = UDim2.fromOffset(newW, newH)
+            originalSize = mainFrame.Size
+        end
+    end)
 
     -- ─────────────────────────────────────────────────────────
     -- TAB BUILDER
