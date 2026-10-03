@@ -438,42 +438,7 @@ local function getSafeGuiContainer()
     return LocalPlayer:WaitForChild("PlayerGui", 10)
 end
 
--- Load WindUI Library
-local WindUI = nil
-local okWind, windErr = pcall(function()
-    local cached = env.TwoSki_WindUI_Instance
-    if cached and typeof(cached) == "table" and cached.CreateWindow then
-        WindUI = cached
-        return
-    end
-
-    local localScript = ReplicatedStorage:FindFirstChild("windui") or (game:GetService("StarterPlayer"):FindFirstChild("windui"))
-    if localScript and localScript:IsA("ModuleScript") then
-        WindUI = require(localScript)
-        env.TwoSki_WindUI_Instance = WindUI
-        return
-    end
-
-    local code = game:HttpGet("https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/windui.lua")
-    WindUI = loadstring(code)()
-    env.TwoSki_WindUI_Instance = WindUI
-end)
-
-if not WindUI then
-    -- Fallback to public WindUI mirror
-    pcall(function()
-        local code = game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua")
-        WindUI = loadstring(code)()
-        env.TwoSki_WindUI_Instance = WindUI
-    end)
-end
-
-if not WindUI then
-    warn("[2K SCRIPT] Failed to initialize WindUI engine.")
-    return
-end
-
--- Clean up any previous Window and leftover ScreenGuis safely
+-- Clean up any previous Window and leftover ScreenGuis safely before loading
 pcall(function()
     local container = getSafeGuiContainer()
     if container then
@@ -483,14 +448,46 @@ pcall(function()
             end
         end
     end
-    if WindUI then
-        if WindUI.Window and typeof(WindUI.Window) == "table" and WindUI.Window.Destroy then
-            pcall(function() WindUI.Window:Destroy() end)
+end)
+
+-- Load WindUI Library (Fast disk read first, fallback to HTTP)
+local WindUI = nil
+local okWind, windErr = pcall(function()
+    if isfile and isfile("windui.lua") and readfile then
+        local code = readfile("windui.lua")
+        if code and #code > 1000 then
+            WindUI = loadstring(code)()
+            return
         end
-        WindUI.Window = nil
-        WindUI.ScreenGui = nil
+    end
+
+    local localScript = ReplicatedStorage:FindFirstChild("windui") or (game:GetService("StarterPlayer"):FindFirstChild("windui"))
+    if localScript and localScript:IsA("ModuleScript") then
+        WindUI = require(localScript)
+        return
+    end
+
+    local code = game:HttpGet("https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/windui.lua")
+    if code and #code > 1000 then
+        if writefile then
+            pcall(function() writefile("windui.lua", code) end)
+        end
+        WindUI = loadstring(code)()
     end
 end)
+
+if not WindUI then
+    -- Fallback to public WindUI mirror
+    pcall(function()
+        local code = game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua")
+        WindUI = loadstring(code)()
+    end)
+end
+
+if not WindUI then
+    warn("[2K SCRIPT] Failed to initialize WindUI engine.")
+    return
+end
 
 -- Calculate responsive UI window dimensions
 local cam = workspace.CurrentCamera
