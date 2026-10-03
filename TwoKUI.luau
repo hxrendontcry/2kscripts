@@ -316,10 +316,10 @@ function TwoKUI:CreateWindow(config)
     local sloganLbl = Instance.new("TextLabel")
     sloganLbl.Name = "Slogan"
     sloganLbl.Text = "Beyond Your Limits."
-    sloganLbl.Font = Enum.Font.SpecialElite or Enum.Font.GothamItalic
-    sloganLbl.TextSize = 15
+    sloganLbl.Font = Enum.Font.GothamMedium
+    sloganLbl.TextSize = 13
     sloganLbl.TextColor3 = Color3.fromHex("#38BDF8")
-    sloganLbl.TextTransparency = 0.35
+    sloganLbl.TextTransparency = 0.15
     sloganLbl.Size = UDim2.new(0, 200, 1, 0)
     sloganLbl.Position = UDim2.new(0.5, -80, 0, 0)
     sloganLbl.BackgroundTransparency = 1
@@ -476,7 +476,7 @@ function TwoKUI:CreateWindow(config)
     uNameLbl.Text = "@" .. LocalPlayer.Name
     uNameLbl.Font = Enum.Font.Gotham
     uNameLbl.TextSize = 10
-    uNameLbl.TextColor3 = Color3.fromHex("#64748B")
+    uNameLbl.TextColor3 = Color3.fromHex("#94A3B8")
     uNameLbl.TextXAlignment = Enum.TextXAlignment.Left
     uNameLbl.Size = UDim2.new(1, -60, 0, 14)
     uNameLbl.Position = UDim2.new(0, 56, 0, 24)
@@ -668,7 +668,7 @@ function TwoKUI:CreateWindow(config)
         tabBtn.Name = "TabBtn_" .. tabIndex
         tabBtn.Size = UDim2.new(1, 0, 0, 42)
         tabBtn.BackgroundColor3 = Color3.fromHex("#081426")
-        tabBtn.BackgroundTransparency = 0.5
+        tabBtn.BackgroundTransparency = 0.35
         tabBtn.Text = ""
         tabBtn.AutoButtonColor = false
         tabBtn.Parent = tabButtonsScroll
@@ -689,15 +689,15 @@ function TwoKUI:CreateWindow(config)
         tIcon.Position = UDim2.new(0, 12, 0.5, -10)
         tIcon.BackgroundTransparency = 1
         tIcon.Image = tabIcon
-        tIcon.ImageColor3 = Color3.fromHex("#94A3B8")
+        tIcon.ImageColor3 = Color3.fromHex("#CBD5E1")
         tIcon.Parent = tabBtn
 
         local tTitle = Instance.new("TextLabel")
         tTitle.Name = "Title"
         tTitle.Text = tabTitle
-        tTitle.Font = Enum.Font.GothamMedium
+        tTitle.Font = Enum.Font.GothamBold
         tTitle.TextSize = 13
-        tTitle.TextColor3 = Color3.fromHex("#94A3B8")
+        tTitle.TextColor3 = Color3.fromHex("#CBD5E1")
         tTitle.TextXAlignment = Enum.TextXAlignment.Left
         tTitle.Size = UDim2.new(1, -44, 1, 0)
         tTitle.Position = UDim2.new(0, 40, 0, 0)
@@ -743,12 +743,12 @@ function TwoKUI:CreateWindow(config)
                 pcall(function()
                     TweenService:Create(t.TabBtn, TweenInfo.new(0.2), {
                         BackgroundColor3 = Color3.fromHex("#081426"),
-                        BackgroundTransparency = 0.5
+                        BackgroundTransparency = 0.35
                     }):Play()
                     local s = t.TabBtn:FindFirstChildWhichIsA("UIStroke")
                     if s then s.Transparency = 0.8 end
                     local ttl = t.TabBtn:FindFirstChild("Title")
-                    if ttl then ttl.TextColor3 = Color3.fromHex("#94A3B8") end
+                    if ttl then ttl.TextColor3 = Color3.fromHex("#CBD5E1") end
                     local ic = t.TabBtn:FindFirstChild("Icon")
                     if ic then ic.ImageColor3 = Color3.fromHex("#94A3B8") end
                 end)
@@ -779,9 +779,9 @@ function TwoKUI:CreateWindow(config)
             if Window.SelectedTab ~= Tab then
                 TweenService:Create(tabBtn, TweenInfo.new(0.15), {
                     BackgroundColor3 = Color3.fromHex("#0E2342"),
-                    BackgroundTransparency = 0.3
+                    BackgroundTransparency = 0.2
                 }):Play()
-                tTitle.TextColor3 = Color3.fromHex("#E2E8F0")
+                tTitle.TextColor3 = Color3.fromHex("#FFFFFF")
             end
         end)
 
@@ -789,9 +789,9 @@ function TwoKUI:CreateWindow(config)
             if Window.SelectedTab ~= Tab then
                 TweenService:Create(tabBtn, TweenInfo.new(0.15), {
                     BackgroundColor3 = Color3.fromHex("#081426"),
-                    BackgroundTransparency = 0.5
+                    BackgroundTransparency = 0.35
                 }):Play()
-                tTitle.TextColor3 = Color3.fromHex("#94A3B8")
+                tTitle.TextColor3 = Color3.fromHex("#CBD5E1")
             end
         end)
 
@@ -822,8 +822,8 @@ function TwoKUI:CreateWindow(config)
             card.Name = "Card_" .. secTitle
             card.Size = UDim2.new(1, 0, 0, 0)
             card.AutomaticSize = Enum.AutomaticSize.Y
-            card.BackgroundColor3 = Color3.fromHex("#050D1D")
-            card.BackgroundTransparency = 0.35
+            card.BackgroundColor3 = Color3.fromHex("#040C1A")
+            card.BackgroundTransparency = 0.20
             card.BorderSizePixel = 0
             card.Parent = tabScroll
 
@@ -834,7 +834,7 @@ function TwoKUI:CreateWindow(config)
             local cardStroke = Instance.new("UIStroke")
             cardStroke.Color = Color3.fromHex("#00D4FF")
             cardStroke.Thickness = 1.3
-            cardStroke.Transparency = 0.65
+            cardStroke.Transparency = 0.5
             cardStroke.Parent = card
 
             local cardLayout = Instance.new("UIListLayout")
@@ -862,7 +862,7 @@ function TwoKUI:CreateWindow(config)
             headerIconBadge.Name = "Badge"
             headerIconBadge.Size = UDim2.fromOffset(34, 34)
             headerIconBadge.Position = UDim2.new(0, 0, 0.5, -17)
-            headerIconBadge.BackgroundColor3 = Color3.fromHex("#081A36")
+            headerIconBadge.BackgroundColor3 = Color3.fromHex("#082042")
             headerIconBadge.BackgroundTransparency = 0.2
             headerIconBadge.Parent = headerFrame
             local bibCorner = Instance.new("UICorner")
@@ -916,8 +916,8 @@ function TwoKUI:CreateWindow(config)
             local function makeRow(height)
                 local row = Instance.new("Frame")
                 row.Size = UDim2.new(1, 0, 0, height or 46)
-                row.BackgroundColor3 = Color3.fromHex("#071428")
-                row.BackgroundTransparency = 0.4
+                row.BackgroundColor3 = Color3.fromHex("#08182E")
+                row.BackgroundTransparency = 0.2
                 row.BorderSizePixel = 0
                 row.Parent = card
                 local rc = Instance.new("UICorner")
@@ -926,7 +926,7 @@ function TwoKUI:CreateWindow(config)
                 local rs = Instance.new("UIStroke")
                 rs.Color = Color3.fromHex("#00E5FF")
                 rs.Thickness = 1
-                rs.Transparency = 0.85
+                rs.Transparency = 0.8
                 rs.Parent = row
                 return row
             end
@@ -937,7 +937,7 @@ function TwoKUI:CreateWindow(config)
                 b.Size = UDim2.fromOffset(30, 30)
                 b.Position = UDim2.new(0, 10, 0.5, -15)
                 b.BackgroundColor3 = Color3.fromHex("#081A33")
-                b.BackgroundTransparency = 0.3
+                b.BackgroundTransparency = 0.2
                 b.Parent = row
                 local c = Instance.new("UICorner")
                 c.CornerRadius = UDim.new(0, 8)
@@ -975,8 +975,8 @@ function TwoKUI:CreateWindow(config)
                     local d = Instance.new("TextLabel")
                     d.Text = desc
                     d.Font = Enum.Font.Gotham
-                    d.TextSize = 10
-                    d.TextColor3 = Color3.fromHex("#64748B")
+                    d.TextSize = 11
+                    d.TextColor3 = Color3.fromHex("#94A3B8")
                     d.TextXAlignment = Enum.TextXAlignment.Left
                     d.Size = UDim2.new(1, -(52 + rightOffset), 0, 14)
                     d.Position = UDim2.new(0, 48, 0.5, 2)
