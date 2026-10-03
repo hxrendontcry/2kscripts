@@ -135,10 +135,25 @@ function TwoKUI:CreateWindow(config)
     
     local container = getGuiContainer()
     
-    -- Cleanup any existing instance
-    for _, c in ipairs(container:GetChildren()) do
-        if c.Name == "TwoK_UI_Screen" or c.Name == "TwoK_Pyramid_Float" then
-            pcall(function() c:Destroy() end)
+    -- Cleanup any existing instance across all possible containers
+    local cleanupContainers = { container, CoreGui }
+    pcall(function()
+        if CoreGui and CoreGui:FindFirstChild("RobloxGui") then
+            table.insert(cleanupContainers, CoreGui.RobloxGui)
+        end
+    end)
+    pcall(function()
+        if LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") then
+            table.insert(cleanupContainers, LocalPlayer.PlayerGui)
+        end
+    end)
+    for _, par in ipairs(cleanupContainers) do
+        if par then
+            for _, c in ipairs(par:GetChildren()) do
+                if c.Name == "TwoK_UI_Screen" or c.Name == "TwoK_Pyramid_Float" then
+                    pcall(function() c:Destroy() end)
+                end
+            end
         end
     end
     

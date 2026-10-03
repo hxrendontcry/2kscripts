@@ -635,24 +635,34 @@ end)
 
 -- Load TwoKUI Proprietary Cyber-Neon Engine
 local TwoKUI = nil
-pcall(function()
+local okTwo, errTwo = pcall(function()
     if isfile and isfile("TwoKUI.luau") and readfile then
         local code = readfile("TwoKUI.luau")
         if code and #code > 1000 then
-            TwoKUI = loadstring(code)()
-            return
+            local fn, lErr = loadstring(code)
+            if fn then
+                TwoKUI = fn()
+                return
+            else
+                warn("[2K SCRIPT] Local TwoKUI syntax error:", lErr)
+            end
         end
     end
 
     local code = game:HttpGet("https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoKUI.luau")
     if code and #code > 1000 then
         if writefile then pcall(function() writefile("TwoKUI.luau", code) end) end
-        TwoKUI = loadstring(code)()
+        local fn, lErr = loadstring(code)
+        if fn then
+            TwoKUI = fn()
+        else
+            warn("[2K SCRIPT] Remote TwoKUI syntax error:", lErr)
+        end
     end
 end)
 
 if not TwoKUI then
-    warn("[2K SCRIPT] Failed to initialize TwoKUI engine.")
+    warn("[2K SCRIPT] Failed to initialize TwoKUI engine. Reason:", errTwo)
     return
 end
 
