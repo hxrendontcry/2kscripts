@@ -40,67 +40,81 @@ local function getGuiContainer()
     return LocalPlayer:WaitForChild("PlayerGui", 10)
 end
 
--- Built-in Icon Map (Lucide & Cyber Asset IDs)
+-- Built-in Verified Icon Map (Lucide & Cyber Asset IDs from TwoKIcons)
 local ICON_MAP = {
-    ["layout-dashboard"] = "rbxassetid://10723415766",
-    ["mountain"]         = "rbxassetid://10734950309",
-    ["dumbbell"]         = "rbxassetid://10747373176",
-    ["zap"]              = "rbxassetid://10709810948",
-    ["user"]             = "rbxassetid://10709790202",
-    ["map-pin"]          = "rbxassetid://10734918191",
-    ["settings"]         = "rbxassetid://10734950020",
-    ["activity"]         = "rbxassetid://10709769841",
-    ["chart-column"]     = "rbxassetid://10709782497",
-    ["sliders-horizontal"] = "rbxassetid://10734950020",
-    ["circle-plus"]      = "rbxassetid://10734886735",
-    ["chevrons-up"]      = "rbxassetid://10709790537",
-    ["maximize-2"]       = "rbxassetid://10734920536",
-    ["clock"]            = "rbxassetid://10709791437",
-    ["gift"]             = "rbxassetid://10723356507",
-    ["ticket"]           = "rbxassetid://10734975692",
-    ["gauge"]            = "rbxassetid://10723356088",
-    ["wind"]             = "rbxassetid://10747372992",
-    ["arrow-up"]         = "rbxassetid://10709768955",
-    ["chevron-up"]       = "rbxassetid://10709790537",
-    ["ghost"]            = "rbxassetid://10723356266",
-    ["shield-check"]     = "rbxassetid://10734950150",
-    ["shield-alert"]     = "rbxassetid://10734950020",
-    ["navigation"]       = "rbxassetid://10734922114",
-    ["hammer"]           = "rbxassetid://10723356743",
-    ["layers"]           = "rbxassetid://10723415766",
-    ["house"]            = "rbxassetid://10723356844",
-    ["crown"]            = "rbxassetid://10723346959",
-    ["circle-arrow-up"]  = "rbxassetid://10709768955",
-    ["award"]            = "rbxassetid://10709769935",
-    ["palette"]          = "rbxassetid://10734924765",
-    ["paint-bucket"]     = "rbxassetid://10734924765",
-    ["cpu"]              = "rbxassetid://10709791942",
-    ["refresh-cw"]       = "rbxassetid://10734940380",
-    ["power"]            = "rbxassetid://10734937746",
-    ["swords"]           = "rbxassetid://10747372167",
-    ["sword"]            = "rbxassetid://10747372167",
-    ["coins"]            = "rbxassetid://10709791771",
-    ["package"]          = "rbxassetid://10734924532",
-    ["download"]         = "rbxassetid://10709798282",
-    ["upload"]           = "rbxassetid://10747373079",
-    ["fast-forward"]     = "rbxassetid://10723355819",
-    ["sparkles"]         = "rbxassetid://10709810948",
-    ["square"]           = "rbxassetid://10709790387",
-    ["box"]              = "rbxassetid://10734924532",
-    ["flag"]             = "rbxassetid://10723356197",
-    ["footprints"]       = "rbxassetid://10747372992",
-    ["map"]              = "rbxassetid://10734918191",
-    ["octagon-x"]        = "rbxassetid://10709790387",
-    ["pencil"]           = "rbxassetid://10734924948",
-    ["repeat"]           = "rbxassetid://10734940380",
-    ["trending-up"]      = "rbxassetid://10709782497",
-    ["unlock"]           = "rbxassetid://10734950150"
+    ["layout-dashboard"] = "rbxassetid://10723424646",
+    ["mountain"]         = "rbxassetid://10734897956",
+    ["dumbbell"]         = "rbxassetid://10747363809",
+    ["zap"]              = "rbxassetid://10723376114",
+    ["user"]             = "rbxassetid://10747373176",
+    ["map-pin"]          = "rbxassetid://10734886004",
+    ["settings"]         = "rbxassetid://10734950309",
+    ["activity"]         = "rbxassetid://10709752035",
+    ["chart-column"]     = "rbxassetid://10709773755",
+    ["sliders-horizontal"] = "rbxassetid://10734963191",
+    ["circle-plus"]      = "rbxassetid://10734923868",
+    ["chevrons-up"]      = "rbxassetid://10709797622",
+    ["maximize-2"]       = "rbxassetid://10734886496",
+    ["clock"]            = "rbxassetid://10709805144",
+    ["gift"]             = "rbxassetid://10723396402",
+    ["ticket"]           = "rbxassetid://10734983868",
+    ["gauge"]            = "rbxassetid://10723395708",
+    ["wind"]             = "rbxassetid://10747382750",
+    ["arrow-up"]         = "rbxassetid://10709768939",
+    ["chevron-up"]       = "rbxassetid://10709791523",
+    ["ghost"]            = "rbxassetid://10723396107",
+    ["shield-check"]     = "rbxassetid://10734951367",
+    ["shield-alert"]     = "rbxassetid://10734951173",
+    ["navigation"]       = "rbxassetid://10734906744",
+    ["hammer"]           = "rbxassetid://10723405360",
+    ["layers"]           = "rbxassetid://10723424505",
+    ["house"]            = "rbxassetid://10723407389",
+    ["crown"]            = "rbxassetid://10709818626",
+    ["circle-arrow-up"]  = "rbxassetid://10709768432",
+    ["award"]            = "rbxassetid://10709769406",
+    ["palette"]          = "rbxassetid://10734910430",
+    ["paint-bucket"]     = "rbxassetid://10734909847",
+    ["cpu"]              = "rbxassetid://10709813383",
+    ["refresh-cw"]       = "rbxassetid://10734933222",
+    ["power"]            = "rbxassetid://10734930466",
+    ["swords"]           = "rbxassetid://10734975692",
+    ["sword"]            = "rbxassetid://10734975486",
+    ["coins"]            = "rbxassetid://10709811110",
+    ["package"]          = "rbxassetid://10734909540",
+    ["download"]         = "rbxassetid://10723344270",
+    ["upload"]           = "rbxassetid://10747366434",
+    ["fast-forward"]     = "rbxassetid://10723354521",
+    ["sparkles"]         = "rbxassetid://10734966248",
+    ["square"]           = "rbxassetid://10734965702",
+    ["box"]              = "rbxassetid://10709782497",
+    ["flag"]             = "rbxassetid://10723375890",
+    ["footprints"]       = "rbxassetid://10723395708",
+    ["map"]              = "rbxassetid://10734886202",
+    ["octagon-x"]        = "rbxassetid://10747384037",
+    ["pencil"]           = "rbxassetid://10734919691",
+    ["repeat"]           = "rbxassetid://10734933966",
+    ["trending-up"]      = "rbxassetid://10747363465",
+    ["unlock"]           = "rbxassetid://10747366027"
 }
 
+local TwoKIcons = nil
+pcall(function()
+    if isfile and isfile("TwoKIcons.luau") and readfile then
+        local fn = loadstring(readfile("TwoKIcons.luau"))
+        if fn then TwoKIcons = fn() end
+    end
+end)
+
 local function resolveIcon(name)
-    if not name or name == "" then return "rbxassetid://10709810948" end
+    if not name or name == "" then return "rbxassetid://10709752035" end
     if string.find(name, "rbxasset") then return name end
-    return ICON_MAP[name] or "rbxassetid://10709810948"
+    if ICON_MAP[name] then return ICON_MAP[name] end
+    if TwoKIcons and TwoKIcons.assets then
+        local k1 = "lucide-" .. name
+        if TwoKIcons.assets[k1] then return TwoKIcons.assets[k1] end
+        if TwoKIcons.assets[name] then return TwoKIcons.assets[name] end
+    end
+    return "rbxassetid://10709752035"
 end
 
 -- Helper: Ensure local image asset
@@ -1237,12 +1251,14 @@ function TwoKUI:CreateWindow(config)
                 local row = makeRow(closedHeight)
                 row.ClipsDescendants = true
 
-                -- Header Frame (Fixed 52px top bar)
-                local header = Instance.new("Frame")
+                -- Header Button (Fixed 52px top bar)
+                local header = Instance.new("TextButton")
                 header.Name = "Header"
                 header.Size = UDim2.new(1, 0, 0, closedHeight)
                 header.Position = UDim2.new(0, 0, 0, 0)
                 header.BackgroundTransparency = 1
+                header.Text = ""
+                header.AutoButtonColor = false
                 header.Parent = row
 
                 makeRowIcon(header, icon)

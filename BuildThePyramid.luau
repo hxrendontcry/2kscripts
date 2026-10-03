@@ -248,9 +248,9 @@ end
 
 -- Key Locations in Map
 local LOCATIONS = {
-    Quarry = Vector3.new(-234.75, 4.0, 38.25),
-    PyramidBase = Vector3.new(351.0, 4.5, 42.0),
-    PyramidTop = Vector3.new(351.0, 380.0, 42.0),
+    Quarry = Vector3.new(-234.75, -5.5, 38.25),
+    PyramidBase = Vector3.new(294.0, 21.0, 42.0),
+    PyramidTop = Vector3.new(294.0, 380.0, 42.0),
     Gym = Vector3.new(-12.75, 4.0, -112.0),
     Spawn = Vector3.new(-7.9, 3.5, 49.1),
     Upgrades = Vector3.new(-15.0, 3.5, 75.0),
@@ -403,7 +403,7 @@ local function safeTeleport(targetPos)
     if not hrp then return false end
     hrp.Velocity = Vector3.zero
     hrp.AssemblyLinearVelocity = Vector3.zero
-    hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2.5, 0))
+    hrp.CFrame = CFrame.new(targetPos)
     return true
 end
 
@@ -416,7 +416,7 @@ local function smoothTweenTo(targetPos, speed)
     dur = math.clamp(dur, 0.2, 5.0)
 
     local tweenInfo = TweenInfo.new(dur, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(hrp, tweenInfo, { CFrame = CFrame.new(targetPos + Vector3.new(0, 2.5, 0)) })
+    local tween = TweenService:Create(hrp, tweenInfo, { CFrame = CFrame.new(targetPos) })
     tween:Play()
     tween.Completed:Wait()
     return true
@@ -429,91 +429,124 @@ local function partPos(inst)
     return inst:GetPivot().Position
 end
 
-local function resolvePyramidSlot(rangeDist)
-    local hum, hrp = getCharHrp()
-    if not hrp then return nil end
-
-    local range = rangeDist or 50
-    if PlacementRange and type(PlacementRange.forPlayer) == "function" and PyramidConfig and PyramidConfig.PlaceDistance then
-        pcall(function() range = PlacementRange.forPlayer(LocalPlayer, PyramidConfig.PlaceDistance) end)
+local function getQuarryTargetPart()
+    if RegionRegistry and RegionRegistry.getPart and RegionRegistry.Ids and RegionRegistry.Ids.Quarry then
+        local p = RegionRegistry.getPart(RegionRegistry.Ids.Quarry)
+        if p then return p end
     end
-
-    if PyramidRuntime and type(PyramidRuntime.resolveSlot) == "function" then
-        local ok, slot = pcall(PyramidRuntime.resolveSlot, hrp.Position, workspace, nil, range)
-        if ok and slot and slot.part then return slot end
-
-        local pyrModel = (PyramidConfig and PyramidConfig.ModelName and workspace:FindFirstChild(PyramidConfig.ModelName))
-            or workspace:FindFirstChild("Pyramid")
-        local pyrCenter = (pyrModel and (pyrModel:IsA("BasePart") and pyrModel.Position or pyrModel:GetPivot().Position))
-            or LOCATIONS.PyramidBase
-        
-        local ok2, slot2 = pcall(PyramidRuntime.resolveSlot, pyrCenter, workspace, nil, 600)
-        if ok2 and slot2 and slot2.part then return slot2 end
+    if workspace:FindFirstChild("Regions") and workspace.Regions:FindFirstChild("Region:Quarry") then
+        return workspace.Regions["Region:Quarry"]
     end
-
-    -- Fallback: iterate pyramid descendants for target slot
-    local pyrModel = (PyramidConfig and PyramidConfig.ModelName and workspace:FindFirstChild(PyramidConfig.ModelName))
-        or workspace:FindFirstChild("Pyramid")
-    if pyrModel then
-        for _, part in ipairs(pyrModel:GetDescendants()) do
-            if part:IsA("BasePart") and (part.Name:find("Slot") or part:GetAttribute("SlotIndex") or part:GetAttribute("Layer")) then
-                return {
-                    part = part,
-                    layer = part:GetAttribute("Layer") or 1,
-                    slotIndex = part:GetAttribute("SlotIndex") or 1,
-                    generation = part:GetAttribute("Generation") or 0
-                }
-            end
-        end
+    local qb = workspace:FindFirstChild("Quarry") and workspace.Quarry:FindFirstChild("QuarryBlocks")
+    if qb then
+        local p = qb:FindFirstChild("Part") or qb:FindFirstChildWhichIsA("BasePart")
+        if p then return p end
     end
-
-    return nil
+    return workspace:FindFirstChild("Quarry")
 end
 
 local function rpcPickup(quarryPart)
+    local target = quarryPart or getQuarryTargetPart()
     local svc = getServices()
-    if svc and svc.BookService then
+    if svc and svc.BookService and target then
         pcall(function()
-            local p = svc.BookService:Pickup(quarryPart)
-            if type(p) == "table" and type(p.catch) == "function" then p:catch(function() end) end
+            local p = svc.BookService:Pickup(target)
+            if type(p) == "table" and type(p.andThen) == "function" then
+                p:andThen(function(ok, state)
+                    if ok and state and CarryState and CarryState.observe then
+                        CarryState.observe(LocalPlayer, state)
+                    end
+                end):catch(function() end)
+            end
         end)
         return
     end
     local bs = getRF("BookService", "Pickup")
-    if bs then
+    if bs and target then
         pcall(function()
             if bs:IsA("RemoteFunction") then
-                bs:InvokeServer(quarryPart)
+                bs:InvokeServer(target)
             elseif type(bs.Pickup) == "function" then
-                bs:Pickup(quarryPart)
+                bs:Pickup(target)
             end
         end)
     end
 end
 
-local function rpcPlace(slot)
-    if not slot then return false end
-    local svc = getServices()
-    if svc and svc.PyramidService then
+local function resolvePyramidPlaceTarget()
+    local rt = runtimeInstance()
+    local preview = rt and rt._pyramidPreview
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+    local ctx = PyramidRuntime and type(PyramidRuntime.getContext) == "function" and PyramidRuntime.getContext(workspace)
+    local geom = ctx and ctx.geometry
+    local curLayer = PyramidRuntime and type(PyramidRuntime.getCurrentLayer) == "function" and PyramidRuntime.getCurrentLayer(workspace)
+
+    local slot = nil
+    if preview and preview.resolveSlot and hrp then
         pcall(function()
-            local p = svc.PyramidService:Place(slot.layer, slot.slotIndex, slot.generation)
-            if type(p) == "table" and type(p.catch) == "function" then p:catch(function() end) end
+            slot = preview.resolveSlot(hrp, workspace, nil, 600)
         end)
-        return true
     end
-    local ps = getRF("PyramidService", "Place")
-    if ps then
+
+    if not slot and PyramidRuntime and type(PyramidRuntime.resolveSlot) == "function" then
         pcall(function()
-            if ps:IsA("RemoteFunction") then
-                ps:InvokeServer(slot.layer, slot.slotIndex, slot.generation)
-            elseif type(ps.Place) == "function" then
-                ps:Place(slot.layer, slot.slotIndex, slot.generation)
-            end
+            local pyrCenter = Vector3.new(294.0, 20.0, 42.0)
+            slot = PyramidRuntime.resolveSlot(pyrCenter, workspace, nil, 600)
         end)
-        return true
+    end
+
+    local targetPos = nil
+    if slot and geom and type(geom.getSlotCFrame) == "function" then
+        local ok, cf = pcall(geom.getSlotCFrame, slot.layer, slot.slotIndex)
+        if ok and cf then
+            targetPos = cf.Position + Vector3.new(0, 3.5, 0)
+        end
+    end
+
+    if not targetPos then
+        local layerY = curLayer and (12.0 + curLayer * 3.0) or 25.0
+        targetPos = Vector3.new(294.0, layerY + 3.5, 42.0)
+    end
+
+    return slot, targetPos
+end
+
+local function rpcPlaceSmart(slot)
+    local rt = runtimeInstance()
+    if rt and type(rt.tryPlacePyramid) == "function" then
+        local ok, res = pcall(function() return rt:tryPlacePyramid() end)
+        if ok and res == true then return true end
+    end
+
+    if slot and slot.layer and slot.slotIndex then
+        local gen = workspace:FindFirstChild("PyramidBuild") and workspace.PyramidBuild:GetAttribute("PlacementGeneration") or 0
+        local svc = getServices()
+        if svc and svc.PyramidService then
+            pcall(function()
+                local p = svc.PyramidService:Place(slot.layer, slot.slotIndex, gen, {})
+                if type(p) == "table" and type(p.catch) == "function" then p:catch(function() end) end
+            end)
+            return true
+        end
+        local ps = getRF("PyramidService", "Place")
+        if ps then
+            pcall(function()
+                if ps:IsA("RemoteFunction") then
+                    ps:InvokeServer(slot.layer, slot.slotIndex, gen, {})
+                elseif type(ps.Place) == "function" then
+                    ps:Place(slot.layer, slot.slotIndex, gen, {})
+                end
+            end)
+            return true
+        end
     end
     return false
 end
+
+-- Backward compatibility alias
+local resolvePyramidSlot = resolvePyramidPlaceTarget
+local rpcPlace = rpcPlaceSmart
 
 -- ─────────────────────────────────────────────────────────────
 -- FPS BOOSTER ENGINE (Ultra Performance & Anti-Lag)
@@ -895,78 +928,60 @@ task.spawn(function()
 
         if State.AutoBuildLoop then
             pcall(function()
-                local qPart = (RegionRegistry and RegionRegistry.getPart and RegionRegistry.getPart("Quarry"))
-                    or workspace:FindFirstChild("Quarry")
-                if not qPart and RegionRegistry and RegionRegistry.Ids and RegionRegistry.Ids.Quarry then
-                    local reg = workspace:FindFirstChild(RegionRegistry.Ids.Quarry)
-                    qPart = reg and reg:FindFirstChildWhichIsA("BasePart")
-                end
-
                 local carried = getCarryCount()
                 local capacity = getCarryCapacity()
 
                 -- Step 1: Pickup blocks if not full
                 if carried < capacity and not isPyramidComplete() then
+                    local qPos = LOCATIONS.Quarry
                     if State.FarmMovementMode:find("Teleport") then
-                        safeTeleport(LOCATIONS.Quarry)
+                        safeTeleport(qPos)
                     else
-                        smoothTweenTo(LOCATIONS.Quarry, 95)
+                        smoothTweenTo(qPos, 95)
                     end
-                    task.wait(State.FarmDelay)
+                    task.wait(math.clamp(State.FarmDelay, 0.35, 1.5))
 
+                    local qPart = getQuarryTargetPart()
                     local attempts = 0
-                    while State.AutoBuildLoop and attempts < 35 do
+                    while State.AutoBuildLoop and attempts < 30 do
                         carried = getCarryCount()
                         if carried >= capacity then break end
                         rpcPickup(qPart)
                         attempts = attempts + 1
-                        task.wait(0.08)
+                        task.wait(0.12)
                     end
                 end
 
                 -- Step 2: Place blocks on Pyramid
                 carried = getCarryCount()
                 if carried > 0 and State.AutoBuildLoop and not isPyramidComplete() then
-                    local rt, irt = runtimeInstance()
-                    local holding = false
-                    local placeAttempts = 0
+                    local slot, placePos = resolvePyramidPlaceTarget()
+                    if placePos then
+                        if State.FarmMovementMode:find("Teleport") then
+                            safeTeleport(placePos)
+                        else
+                            smoothTweenTo(placePos, 95)
+                        end
+                        task.wait(0.35)
+                    end
 
-                    while State.AutoBuildLoop and placeAttempts < 40 do
+                    local placeAttempts = 0
+                    while State.AutoBuildLoop and placeAttempts < 35 do
                         carried = getCarryCount()
                         if carried <= 0 or isPyramidComplete() then break end
 
-                        local slot = resolvePyramidSlot(120)
-                        if slot and slot.part then
-                            local slotPos = slot.part.Position
-                            if State.FarmMovementMode:find("Teleport") then
-                                safeTeleport(slotPos + Vector3.new(0, 3, 0))
-                            else
-                                local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                                if hrp and (hrp.Position - slotPos).Magnitude > 35 then
-                                    safeTeleport(slotPos + Vector3.new(0, 3, 0))
-                                end
-                            end
-
-                            if rt and irt and type(irt.beginPlaceHold) == "function" and not holding then
-                                pcall(function() irt.beginPlaceHold(rt) end)
-                                holding = true
-                            end
-
-                            rpcPlace(slot)
-                        else
-                            safeTeleport(LOCATIONS.PyramidBase)
-                            if rt and irt and type(irt.beginPlaceHold) == "function" and not holding then
-                                pcall(function() irt.beginPlaceHold(rt) end)
-                                holding = true
+                        local curSlot, newPos = resolvePyramidPlaceTarget()
+                        if newPos and placeAttempts % 4 == 0 then
+                            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if hrp and (hrp.Position - newPos).Magnitude > 20 then
+                                safeTeleport(newPos)
+                                task.wait(0.2)
                             end
                         end
 
+                        rpcPlaceSmart(curSlot or slot)
                         placeAttempts = placeAttempts + 1
-                        task.wait(State.FarmDelay)
-                    end
-
-                    if holding and rt and irt and type(irt.endPlaceHold) == "function" then
-                        pcall(function() irt.endPlaceHold(rt) end)
+                        task.wait(math.clamp(State.FarmDelay, 0.25, 1.5))
                     end
                 end
             end)
@@ -975,12 +990,7 @@ task.spawn(function()
         -- Standalone Auto Pickup
         if State.AutoPickupOnly and not State.AutoBuildLoop then
             pcall(function()
-                local qPart = (RegionRegistry and RegionRegistry.getPart and RegionRegistry.getPart("Quarry"))
-                    or workspace:FindFirstChild("Quarry")
-                if not qPart and RegionRegistry and RegionRegistry.Ids and RegionRegistry.Ids.Quarry then
-                    local reg = workspace:FindFirstChild(RegionRegistry.Ids.Quarry)
-                    qPart = reg and reg:FindFirstChildWhichIsA("BasePart")
-                end
+                local qPart = getQuarryTargetPart()
                 rpcPickup(qPart)
             end)
             task.wait(State.FarmDelay)
@@ -989,20 +999,15 @@ task.spawn(function()
         -- Standalone Auto Place
         if State.AutoPlaceOnly and not State.AutoBuildLoop then
             pcall(function()
-                local rt, irt = runtimeInstance()
-                local slot = resolvePyramidSlot(120)
-                if slot and slot.part then
-                    safeTeleport(slot.part.Position + Vector3.new(0, 3, 0))
-                    if rt and irt and type(irt.beginPlaceHold) == "function" then
-                        pcall(function() irt.beginPlaceHold(rt) end)
-                    end
-                    rpcPlace(slot)
-                else
-                    safeTeleport(LOCATIONS.PyramidBase)
-                    if rt and irt and type(irt.beginPlaceHold) == "function" then
-                        pcall(function() irt.beginPlaceHold(rt) end)
+                local curSlot, newPos = resolvePyramidPlaceTarget()
+                if newPos then
+                    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp and (hrp.Position - newPos).Magnitude > 20 then
+                        safeTeleport(newPos)
+                        task.wait(0.2)
                     end
                 end
+                rpcPlaceSmart(curSlot)
             end)
             task.wait(State.FarmDelay)
         end
@@ -1466,7 +1471,7 @@ task.spawn(function()
         if not _G.TwoSkiPyramidRunning or _G.TwoSkiActivePyramidToken ~= myToken then break end
         if State.AntiFall then
             local _, hrp = getCharHrp()
-            if hrp and hrp.Position.Y < -5.0 then
+            if hrp and hrp.Position.Y < -35.0 then
                 safeTeleport(LOCATIONS.Spawn)
             end
         end
