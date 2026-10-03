@@ -1149,7 +1149,7 @@ function TwoKUI:CreateWindow(config)
                 }
             end
 
-            -- 3. DROPDOWN (Sleek Selector Badge + Popup)
+            -- 3. DROPDOWN (Sleek Accordion Tray - 100% immune to overlap)
             function Section:Dropdown(cfg)
                 cfg = cfg or {}
                 local title = cfg.Title or "Dropdown"
@@ -1159,18 +1159,35 @@ function TwoKUI:CreateWindow(config)
                 local curVal = cfg.Value or values[1] or ""
                 local callback = cfg.Callback or function() end
 
-                local row = makeRow(52)
-                makeRowIcon(row, icon)
-                makeRowTexts(row, title, desc, 160)
+                local closedHeight = 52
+                local maxVisibleItems = 5
+                local itemHeight = 30
+                local trayHeight = math.clamp(#values * (itemHeight + 4), 34, maxVisibleItems * (itemHeight + 4))
+                local openHeight = closedHeight + trayHeight + 16
+
+                local row = makeRow(closedHeight)
+                row.ClipsDescendants = true
+
+                -- Header Frame (Fixed 52px top bar)
+                local header = Instance.new("Frame")
+                header.Name = "Header"
+                header.Size = UDim2.new(1, 0, 0, closedHeight)
+                header.Position = UDim2.new(0, 0, 0, 0)
+                header.BackgroundTransparency = 1
+                header.Parent = row
+
+                makeRowIcon(header, icon)
+                makeRowTexts(header, title, desc, 160)
 
                 local dropBtn = Instance.new("TextButton")
+                dropBtn.Name = "SelectorBadge"
                 dropBtn.Size = UDim2.fromOffset(145, 30)
                 dropBtn.Position = UDim2.new(1, -155, 0.5, -15)
                 dropBtn.BackgroundColor3 = Color3.fromHex("#081A33")
                 dropBtn.BackgroundTransparency = 0.2
                 dropBtn.Text = ""
                 dropBtn.AutoButtonColor = false
-                dropBtn.Parent = row
+                dropBtn.Parent = header
 
                 local dc = Instance.new("UICorner")
                 dc.CornerRadius = UDim.new(0, 8)
@@ -1204,89 +1221,129 @@ function TwoKUI:CreateWindow(config)
                 arrow.BackgroundTransparency = 1
                 arrow.Parent = dropBtn
 
-                -- Floating Popup Menu
-                local menuFrame = Instance.new("Frame")
-                menuFrame.Name = "DropMenu"
-                menuFrame.Size = UDim2.fromOffset(145, math.min(#values * 30 + 8, 160))
-                menuFrame.Position = UDim2.new(1, -155, 1, 4)
-                menuFrame.BackgroundColor3 = Color3.fromHex("#050F22")
-                menuFrame.BorderSizePixel = 0
-                menuFrame.Visible = false
-                menuFrame.ZIndex = 50
-                menuFrame.Parent = row
+                -- Subtle Divider Line when opened
+                local divider = Instance.new("Frame")
+                divider.Name = "Divider"
+                divider.Size = UDim2.new(1, -20, 0, 1)
+                divider.Position = UDim2.new(0, 10, 0, 51)
+                divider.BackgroundColor3 = Color3.fromHex("#00E5FF")
+                divider.BackgroundTransparency = 0.8
+                divider.BorderSizePixel = 0
+                divider.Visible = false
+                divider.Parent = row
 
-                local mc = Instance.new("UICorner")
-                mc.CornerRadius = UDim.new(0, 8)
-                mc.Parent = menuFrame
-                local ms = Instance.new("UIStroke")
-                ms.Color = Color3.fromHex("#00E5FF")
-                ms.Thickness = 1.2
-                ms.Transparency = 0.4
-                ms.Parent = menuFrame
+                -- In-flow Options Tray (ScrollingFrame)
+                local tray = Instance.new("ScrollingFrame")
+                tray.Name = "OptionsTray"
+                tray.Size = UDim2.new(1, -20, 0, trayHeight)
+                tray.Position = UDim2.new(0, 10, 0, 58)
+                tray.BackgroundTransparency = 1
+                tray.BorderSizePixel = 0
+                tray.ScrollBarThickness = 2
+                tray.ScrollBarImageColor3 = Color3.fromHex("#00E5FF")
+                tray.CanvasSize = UDim2.new(0, 0, 0, 0)
+                tray.AutomaticCanvasSize = Enum.AutomaticSize.Y
+                tray.Visible = false
+                tray.Parent = row
 
-                local mScroll = Instance.new("ScrollingFrame")
-                mScroll.Size = UDim2.new(1, -4, 1, -4)
-                mScroll.Position = UDim2.new(0, 2, 0, 2)
-                mScroll.BackgroundTransparency = 1
-                mScroll.BorderSizePixel = 0
-                mScroll.ScrollBarThickness = 2
-                mScroll.ScrollBarImageColor3 = Color3.fromHex("#00E5FF")
-                mScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-                mScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-                mScroll.ZIndex = 51
-                mScroll.Parent = menuFrame
+                local trayLayout = Instance.new("UIListLayout")
+                trayLayout.FillDirection = Enum.FillDirection.Vertical
+                trayLayout.Padding = UDim.new(0, 4)
+                trayLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                trayLayout.Parent = tray
 
-                local mLayout = Instance.new("UIListLayout")
-                mLayout.FillDirection = Enum.FillDirection.Vertical
-                mLayout.Padding = UDim.new(0, 3)
-                mLayout.Parent = mScroll
+                local optionButtons = {}
+                local function updateSelectionHighlight()
+                    for _, item in ipairs(optionButtons) do
+                        local isSel = (item.Value == curVal)
+                        item.Btn.BackgroundColor3 = isSel and Color3.fromHex("#0284C7") or Color3.fromHex("#061528")
+                        item.Btn.BackgroundTransparency = isSel and 0.15 or 0.4
+                        item.Btn.TextColor3 = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#CBD5E1")
+                        local s = item.Btn:FindFirstChildWhichIsA("UIStroke")
+                        if s then
+                            s.Color = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#00E5FF")
+                            s.Transparency = isSel and 0.3 or 0.85
+                        end
+                    end
+                end
 
                 local isOpen = false
                 local function toggleMenu()
                     isOpen = not isOpen
-                    menuFrame.Visible = isOpen
                     arrow.Text = isOpen and "▴" or "▾"
+                    divider.Visible = isOpen
+                    tray.Visible = isOpen
+
+                    local targetH = isOpen and openHeight or closedHeight
+                    TweenService:Create(row, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                        Size = UDim2.new(1, 0, 0, targetH)
+                    }):Play()
+
+                    if isOpen then
+                        updateSelectionHighlight()
+                    end
                 end
 
+                dropBtn.MouseButton1Click:Connect(toggleMenu)
+
                 for _, opt in ipairs(values) do
+                    local isSel = (opt == curVal)
                     local optBtn = Instance.new("TextButton")
-                    optBtn.Size = UDim2.new(1, 0, 0, 26)
-                    optBtn.BackgroundColor3 = Color3.fromHex("#071830")
-                    optBtn.BackgroundTransparency = 0.5
-                    optBtn.Text = tostring(opt)
-                    optBtn.Font = Enum.Font.Gotham
-                    optBtn.TextSize = 11
-                    optBtn.TextColor3 = Color3.fromHex("#E2E8F0")
-                    optBtn.ZIndex = 52
-                    optBtn.Parent = mScroll
+                    optBtn.Size = UDim2.new(1, -4, 0, itemHeight)
+                    optBtn.BackgroundColor3 = isSel and Color3.fromHex("#0284C7") or Color3.fromHex("#061528")
+                    optBtn.BackgroundTransparency = isSel and 0.15 or 0.4
+                    optBtn.Text = "  " .. tostring(opt)
+                    optBtn.Font = Enum.Font.GothamMedium
+                    optBtn.TextSize = 12
+                    optBtn.TextColor3 = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#CBD5E1")
+                    optBtn.TextXAlignment = Enum.TextXAlignment.Left
+                    optBtn.AutoButtonColor = false
+                    optBtn.Parent = tray
 
                     local oc = Instance.new("UICorner")
                     oc.CornerRadius = UDim.new(0, 6)
                     oc.Parent = optBtn
 
+                    local os = Instance.new("UIStroke")
+                    os.Color = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#00E5FF")
+                    os.Thickness = 1
+                    os.Transparency = isSel and 0.3 or 0.85
+                    os.Parent = optBtn
+
+                    table.insert(optionButtons, { Btn = optBtn, Value = opt })
+
                     optBtn.MouseEnter:Connect(function()
-                        optBtn.BackgroundColor3 = Color3.fromHex("#0284C7")
-                        optBtn.TextColor3 = Color3.fromHex("#FFFFFF")
+                        if opt ~= curVal then
+                            TweenService:Create(optBtn, TweenInfo.new(0.15), {
+                                BackgroundColor3 = Color3.fromHex("#0D2545"),
+                                TextColor3 = Color3.fromHex("#FFFFFF")
+                            }):Play()
+                        end
                     end)
+
                     optBtn.MouseLeave:Connect(function()
-                        optBtn.BackgroundColor3 = Color3.fromHex("#071830")
-                        optBtn.TextColor3 = Color3.fromHex("#E2E8F0")
+                        if opt ~= curVal then
+                            TweenService:Create(optBtn, TweenInfo.new(0.15), {
+                                BackgroundColor3 = Color3.fromHex("#061528"),
+                                TextColor3 = Color3.fromHex("#CBD5E1")
+                            }):Play()
+                        end
                     end)
 
                     optBtn.MouseButton1Click:Connect(function()
                         curVal = opt
                         lbl.Text = tostring(curVal)
+                        updateSelectionHighlight()
                         toggleMenu()
                         task.spawn(callback, curVal)
                     end)
                 end
 
-                dropBtn.MouseButton1Click:Connect(toggleMenu)
-
                 return {
                     SetValue = function(v)
                         curVal = v
                         lbl.Text = tostring(v)
+                        updateSelectionHighlight()
                         task.spawn(callback, curVal)
                     end
                 }
