@@ -348,11 +348,12 @@ local function startBenchSession(targetId)
     if not sFolder then return false end
 
     local bench = sFolder:FindFirstChild("Benchpress")
+    local alignPart = bench and bench:FindFirstChild("HumanoidRootPart")
     local promptPart = bench and bench:FindFirstChild("PromptPart")
     local prompt = promptPart and promptPart:FindFirstChildOfClass("ProximityPrompt")
 
     local hum, hrp = getCharHrp()
-    if not hrp or not promptPart then return false end
+    if not hrp or not alignPart then return false end
 
     if prompt then
         prompt.MaxActivationDistance = 50
@@ -363,15 +364,18 @@ local function startBenchSession(targetId)
 
     hrp.Velocity = Vector3.zero
     hrp.AssemblyLinearVelocity = Vector3.zero
-    hrp.CFrame = promptPart.CFrame + Vector3.new(0, 1.5, 0)
-    task.wait(0.25)
+    hrp.CFrame = alignPart.CFrame
+    task.wait(0.15)
 
     if prompt and fireproximityprompt then
         fireproximityprompt(prompt)
     end
 
-    task.wait(0.1)
-    invokeGymRF("StartBench", targetId)
+    task.wait(0.25)
+    local curStation = LocalPlayer:GetAttribute("BenchStation")
+    if not curStation or tostring(curStation) ~= tostring(targetId) then
+        invokeGymRF("StartBench", targetId)
+    end
     return true
 end
 
@@ -1193,7 +1197,10 @@ task.spawn(function()
         
         -- Prompt Bypass Loop
         if State.BypassGymPrompt then
-            pcall(bypassAllGymPrompts)
+            local isBenching = LocalPlayer:GetAttribute("BenchStation") ~= nil
+            if not isBenching then
+                pcall(bypassAllGymPrompts)
+            end
         end
 
         -- Bench Press Loop
@@ -1208,6 +1215,17 @@ task.spawn(function()
                 local currentStation = LocalPlayer:GetAttribute("BenchStation")
                 if not currentStation or tostring(currentStation) ~= tostring(targetId) then
                     startBenchSession(targetId)
+                else
+                    local gymFolder = workspace:FindFirstChild("Gym")
+                    local sFolder = gymFolder and gymFolder:FindFirstChild(targetId)
+                    local bench = sFolder and sFolder:FindFirstChild("Benchpress")
+                    local alignPart = bench and bench:FindFirstChild("HumanoidRootPart")
+                    local hum, hrp = getCharHrp()
+                    if hrp and alignPart then
+                        hrp.Velocity = Vector3.zero
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        hrp.CFrame = alignPart.CFrame
+                    end
                 end
             end)
         end
@@ -1228,12 +1246,10 @@ task.spawn(function()
 
                 local hum, hrp = getCharHrp()
                 if hrp and hitbox then
-                    local targetCFrame = hitbox.CFrame + Vector3.new(0, 2.5, 0)
-                    if (hrp.Position - hitbox.Position).Magnitude > 8 then
-                        hrp.Velocity = Vector3.zero
-                        hrp.AssemblyLinearVelocity = Vector3.zero
-                        hrp.CFrame = targetCFrame
-                    end
+                    local targetCFrame = hitbox.CFrame + Vector3.new(0, 1.0, 0)
+                    hrp.Velocity = Vector3.zero
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.CFrame = targetCFrame
                 end
             end)
         end
