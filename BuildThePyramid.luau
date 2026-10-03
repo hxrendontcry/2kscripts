@@ -473,34 +473,20 @@ if not WindUI then
     return
 end
 
--- Register Egyptian Amber Gold & Cyber Themes
-local function regTheme(name, hexAcc, hexBg, hexDlg, hexBtn, hexPnl, hexElm)
-    local cAcc = Color3.fromHex(hexAcc)
-    pcall(function()
-        WindUI:AddTheme({
-            Name = name,
-            Accent = cAcc,
-            Dialog = Color3.fromHex(hexDlg),
-            Outline = cAcc,
-            Text = Color3.fromHex("#FFFFFF"),
-            Placeholder = cAcc,
-            Background = Color3.fromHex(hexBg),
-            Button = Color3.fromHex(hexBtn),
-            Icon = cAcc,
-            Toggle = cAcc,
-            Slider = cAcc,
-            Checkbox = cAcc,
-            PanelBackground = Color3.fromHex(hexPnl),
-            ElementBackground = Color3.fromHex(hexElm)
-        })
-    end)
-end
-
-regTheme("PharaohAmber", "#FFB700", "#1C1407", "#2B1E0A", "#473212", "#291E0A", "#382910")
-regTheme("Tiffany",      "#00FFE0", "#10282C", "#163A40", "#24555E", "#17373D", "#1E464E")
-regTheme("Sky",          "#00D0FF", "#102538", "#153652", "#255278", "#173550", "#1F4568")
-regTheme("Emerald",      "#00FF99", "#102B1E", "#153E2A", "#235B3E", "#173C2A", "#1F4E37")
-regTheme("Purple",       "#C866FF", "#241538", "#331E50", "#4E2E78", "#321E4E", "#422766")
+-- Clean up any previous Window and leftover ScreenGuis safely
+pcall(function()
+    local container = getSafeGuiContainer()
+    if container then
+        for _, c in ipairs(container:GetChildren()) do
+            if c.Name == "WindUI" or c.Name == "TwoK_Pyramid_Float" then
+                pcall(function() c:Destroy() end)
+            end
+        end
+    end
+    if WindUI and WindUI.Window and typeof(WindUI.Window) == "table" and WindUI.Window.Destroy then
+        pcall(function() WindUI.Window:Destroy() end)
+    end
+end)
 
 -- Calculate responsive UI window dimensions
 local cam = workspace.CurrentCamera
@@ -508,19 +494,11 @@ local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
 local winWidth = isMobile and math.clamp(math.floor(vp.X * 0.90), 360, 580) or 600
 local winHeight = isMobile and math.clamp(math.floor(vp.Y * 0.85), 280, 450) or 480
 
--- Clean up any previous Window safely
-pcall(function()
-    local prev = WindUI.Window
-    if prev and typeof(prev) == "table" and prev.Destroy then
-        prev:Destroy()
-    end
-end)
-
 local Window = WindUI:CreateWindow({
     Title = "2K SCRIPT",
     SubTitle = "Build the Pyramid! Edition",
     Folder = "2k_build_the_pyramid",
-    Theme = "PharaohAmber",
+    Theme = "Amber",
     Transparent = false,
     SideBarWidth = isMobile and 145 or 200,
     HasOutline = true,
@@ -1229,8 +1207,8 @@ TabSettings:Section({ Title = "ปรับแต่งธีม UI (Theme Setti
 TabSettings:Dropdown({
     Title = "เลือกสไตล์สี UI (Select Theme)",
     Icon = "paint-bucket",
-    Values = { "PharaohAmber", "Tiffany", "Sky", "Emerald", "Purple" },
-    Value = "PharaohAmber",
+    Values = { "Amber", "Dark", "Rose", "Amethyst", "Emerald", "Aqua" },
+    Value = "Amber",
     Callback = function(themeName)
         pcall(function()
             if WindUI and WindUI.SetTheme then
