@@ -508,13 +508,13 @@ local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
 local winWidth = isMobile and math.clamp(math.floor(vp.X * 0.90), 360, 580) or 600
 local winHeight = isMobile and math.clamp(math.floor(vp.Y * 0.85), 280, 450) or 480
 
--- Clean up any previous Window
-if WindUI.Window then
-    pcall(function()
-        if WindUI.Window.Destroy then WindUI.Window:Destroy() end
-    end)
-    WindUI.Window = nil
-end
+-- Clean up any previous Window safely
+pcall(function()
+    local prev = WindUI.Window
+    if prev and typeof(prev) == "table" and prev.Destroy then
+        prev:Destroy()
+    end
+end)
 
 local Window = WindUI:CreateWindow({
     Title = "2K SCRIPT",
