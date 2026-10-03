@@ -716,22 +716,27 @@ local statParagraph = TabDashboard:Paragraph({
 
 local function updateDashboardStats()
     pcall(function()
+        restoreIdentity()
         local ls = LocalPlayer:FindFirstChild("leaderstats")
         local strength = (ls and ls:FindFirstChild("Strength") and ls.Strength.Value) or LocalPlayer:GetAttribute("StrengthLevel") or 0
         local speed = (ls and ls:FindFirstChild("Speed") and ls.Speed.Value) or LocalPlayer:GetAttribute("SpeedLevel") or 0
-        local blocks = getCarryCount()
+        local blocks = LocalPlayer:GetAttribute("CarriedCount") or (ls and ls:FindFirstChild("Blocks") and ls.Blocks.Value) or 0
         local cap = getCarryCapacity()
         local pyramids = (ls and ls:FindFirstChild("Pyramids") and ls.Pyramids.Value) or 0
         local bankedSec = LocalPlayer:GetAttribute("BankedSeconds") or 0
 
-        statParagraph:SetTitle(string.format("บล็อกที่ถือ: %s / %s | พีระมิดที่สร้าง: %s", tostring(blocks), tostring(cap), tostring(pyramids)))
-        statParagraph:SetDesc(string.format("Strength: %s  |  Speed: %s  |  เวลาสะสม: %s วิ", tostring(strength), tostring(speed), tostring(bankedSec)))
+        local t = string.format("บล็อกที่ถือ: %s / %s | พีระมิดที่สร้าง: %s", tostring(blocks), tostring(cap), tostring(pyramids))
+        local d = string.format("Strength: %s  |  Speed: %s  |  เวลาสะสม: %s วิ", tostring(strength), tostring(speed), tostring(bankedSec))
+        statParagraph:SetTitle(t)
+        statParagraph:SetDesc(d)
+        if statParagraph.TitleLabel then statParagraph.TitleLabel.Text = t end
+        if statParagraph.DescLabel then statParagraph.DescLabel.Text = d end
     end)
 end
 
-updateDashboardStats()
-
 task.spawn(function()
+    task.wait(0.2)
+    updateDashboardStats()
     while task.wait(1.0) do
         if not Window or not Window.ScreenGui or not Window.ScreenGui.Parent then break end
         updateDashboardStats()
@@ -1005,6 +1010,7 @@ local gymStatParagraph = TabGym:Paragraph({
 
 local function updateGymStats()
     pcall(function()
+        restoreIdentity()
         local ls = LocalPlayer:FindFirstChild("leaderstats")
         local str = (ls and ls:FindFirstChild("Strength") and ls.Strength.Value) or LocalPlayer:GetAttribute("StrengthLevel") or 0
         local spd = (ls and ls:FindFirstChild("Speed") and ls.Speed.Value) or LocalPlayer:GetAttribute("SpeedLevel") or 0
@@ -1013,14 +1019,18 @@ local function updateGymStats()
         local benchSt = LocalPlayer:GetAttribute("BenchStation")
         local benchStatus = benchSt and string.format("กำลังฝึกแท่น %s (%sx)", tostring(benchSt), tostring(strMul)) or "ไม่ได้ฝึก (Idle)"
 
-        gymStatParagraph:SetTitle(string.format("Strength: Lv.%s (คูณ %sx)  |  Speed: Lv.%s (คูณ %sx)", tostring(str), tostring(strMul), tostring(spd), tostring(spdMul)))
-        gymStatParagraph:SetDesc(string.format("สถานะแท่น Bench: %s  |  แท่นที่ระบบแนะนำ: แท่น %s", benchStatus, getBestBenchStationId()))
+        local t = string.format("Strength: Lv.%s (คูณ %sx)  |  Speed: Lv.%s (คูณ %sx)", tostring(str), tostring(strMul), tostring(spd), tostring(spdMul))
+        local d = string.format("สถานะแท่น Bench: %s  |  แท่นที่ระบบแนะนำ: แท่น %s", benchStatus, getBestBenchStationId())
+        gymStatParagraph:SetTitle(t)
+        gymStatParagraph:SetDesc(d)
+        if gymStatParagraph.TitleLabel then gymStatParagraph.TitleLabel.Text = t end
+        if gymStatParagraph.DescLabel then gymStatParagraph.DescLabel.Text = d end
     end)
 end
 
-updateGymStats()
-
 task.spawn(function()
+    task.wait(0.3)
+    updateGymStats()
     while task.wait(1.0) do
         if not Window or not Window.ScreenGui or not Window.ScreenGui.Parent then break end
         updateGymStats()

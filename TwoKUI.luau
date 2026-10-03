@@ -1474,6 +1474,8 @@ function TwoKUI:CreateWindow(config)
                 return {
                     SetTitle = setTitle,
                     SetDesc = setDesc,
+                    TitleLabel = tLbl,
+                    DescLabel = dLbl,
                     Row = row
                 }
             end
