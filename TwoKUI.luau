@@ -100,8 +100,15 @@ local ICON_MAP = {
 local TwoKIcons = nil
 pcall(function()
     if isfile and isfile("TwoKIcons.luau") and readfile then
-        local fn = loadstring(readfile("TwoKIcons.luau"))
+        local fn = (loadstring or load)(readfile("TwoKIcons.luau"))
         if fn then TwoKIcons = fn() end
+    end
+    if not TwoKIcons and game and game.HttpGet then
+        local okH, raw = pcall(game.HttpGet, game, "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoKIcons.luau")
+        if okH and raw and #raw > 100 then
+            local fn = (loadstring or load)(raw)
+            if fn then TwoKIcons = fn() end
+        end
     end
 end)
 

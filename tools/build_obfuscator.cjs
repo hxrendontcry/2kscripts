@@ -47,10 +47,18 @@ function obfuscateLuau(sourceCode, scriptName = '2K-Engine') {
     const varRun = `_2k_r_${crypto.randomBytes(3).toString('hex')}`;
 
     // 3. Assemble Self-Executing Protected Envelope
-    const output = `-- [ 2K SECURITY V3 - PROTECTED & OBFUSCATED SCRIPT ]
+    const output = `-- [ 2K SECURITY V3 - HARDENED DISTRIBUTION ENVELOPE ]
 -- Module: ${scriptName}
--- Timestamp: ${new Date().toISOString()}
--- NOTICE: Unauthorized decompilation, dumping or hooking will terminate execution.
+-- Build: ${new Date().toISOString()}
+-- Protected by 2K Security Engine (Anti-Hook / Anti-Dump / Anti-Decompile)
+
+do
+    local _opq = 0x5F3759DF
+    if (_opq * 0) ~= 0 then
+        while true do end
+        return
+    end
+end
 
 local ${varKey} = "${key}"
 local ${varChunks} = {
@@ -62,7 +70,6 @@ local function ${varDec}()
     local s_byte = string.byte
     local t_concat = table.concat
     local b_xor = (bit32 and bit32.bxor) or function(a, b)
-        -- fallback XOR
         local p, c = 1, 0
         while a > 0 and b > 0 do
             local ra, rb = a % 2, b % 2
@@ -94,7 +101,6 @@ local function ${varDec}()
         for j = 1, chunk_len do
             local enc_val = chunk[j]
             local kb = k_bytes[(global_idx % k_len) + 1]
-            -- reverse: orig = b_xor((enc_val - (global_idx * 7)) % 256, kb)
             local offset_sub = (enc_val - (global_idx * 7)) % 256
             if offset_sub < 0 then offset_sub = offset_sub + 256 end
             local orig_byte = b_xor(offset_sub, kb)
@@ -108,15 +114,43 @@ local function ${varDec}()
 end
 
 local ${varRun} = (loadstring or load)
+
+-- Anti-Hooking & Auto-Restoration
+if isfunctionhooked and isfunctionhooked(${varRun}) then
+    if restorefunction then
+        pcall(restorefunction, ${varRun})
+    end
+end
+
+if debug and debug.info then
+    local ok_info, src_info = pcall(debug.info, ${varRun}, "s")
+    if ok_info and type(src_info) == "string" and src_info ~= "[C]" and src_info ~= "=[C]" and src_info ~= "" and not string.find(src_info, "loadstring") then
+        pcall(function()
+            local p = game:GetService("Players").LocalPlayer
+            if p and p.Kick then p:Kick("[2K Security] Interception attempt detected.") end
+        end)
+        return
+    end
+end
+
 local ${varBuf} = ${varDec}()
 
--- Integrity check
+-- Integrity Verification
 if not ${varBuf} or #${varBuf} == 0 then
     error("[2K Security] Integrity verification failed.", 0)
     return
 end
 
 local _compiled, _cErr = ${varRun}(${varBuf}, "=${scriptName}")
+
+-- In-Memory GC Scrubbing (Purge all traces from heap memory)
+${varBuf} = nil
+${varChunks} = nil
+${varKey} = nil
+${varDec} = nil
+if gcinfo then pcall(gcinfo) end
+if collectgarbage then pcall(collectgarbage, "collect") end
+
 if not _compiled then
     error("[2K Security] Execution failure: " .. tostring(_cErr), 0)
     return
