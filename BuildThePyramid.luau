@@ -1138,6 +1138,147 @@ TabSettings:Slider({
     end
 })
 
+-- ─────────────────────────────────────────────────────────────
+-- CONFIG MANAGER (ระบบสร้าง, บันทึก, โหลด, และ AUTOLOAD)
+-- ─────────────────────────────────────────────────────────────
+local CONFIG_FOLDER = "2kscripts_config"
+local GAME_CONFIG_FOLDER = "2kscripts_config/pyramid"
+local AUTOLOAD_FILE = GAME_CONFIG_FOLDER .. "/autoload.json"
+
+local function ensureConfigDir()
+    pcall(function()
+        if makefolder and not isfolder(CONFIG_FOLDER) then makefolder(CONFIG_FOLDER) end
+        if makefolder and not isfolder(GAME_CONFIG_FOLDER) then makefolder(GAME_CONFIG_FOLDER) end
+    end)
+end
+ensureConfigDir()
+
+local currentConfigName = "default"
+
+local function saveConfig(name)
+    name = (name and name ~= "") and name or "default"
+    ensureConfigDir()
+    local data = {
+        AutoBuildLoop = State.AutoBuildLoop,
+        AutoPickupOnly = State.AutoPickupOnly,
+        AutoPlaceOnly = State.AutoPlaceOnly,
+        FarmDelay = State.FarmDelay,
+        TravelMode = State.TravelMode,
+        SelectedGymStation = State.SelectedGymStation,
+        AutoGymTrain = State.AutoGymTrain,
+        AutoUpgradePickup = State.AutoUpgradePickup,
+        AutoUpgradePlace = State.AutoUpgradePlace,
+        AutoUpgradeRange = State.AutoUpgradeRange,
+        WalkSpeed = State.WalkSpeed,
+        JumpPower = State.JumpPower,
+        AntiAFK = State.AntiAFK
+    }
+    local json = HttpService:JSONEncode(data)
+    local path = GAME_CONFIG_FOLDER .. "/" .. name .. ".json"
+    if writefile then
+        writefile(path, json)
+        WindUI:Notify({ Title = "2K SCRIPT", Content = "บันทึก Config '" .. name .. "' สำเร็จ!" })
+        return true
+    end
+    return false
+end
+
+local function loadConfig(name)
+    name = (name and name ~= "") and name or "default"
+    local path = GAME_CONFIG_FOLDER .. "/" .. name .. ".json"
+    if isfile and isfile(path) and readfile then
+        local raw = readfile(path)
+        local ok, data = pcall(function() return HttpService:JSONDecode(raw) end)
+        if ok and type(data) == "table" then
+            for k, v in pairs(data) do
+                if State[k] ~= nil then
+                    State[k] = v
+                end
+            end
+            WindUI:Notify({ Title = "2K SCRIPT", Content = "โหลด Config '" .. name .. "' สำเร็จ!" })
+            return true
+        end
+    end
+    WindUI:Notify({ Title = "2K SCRIPT", Content = "ไม่พบไฟล์ Config '" .. name .. "'!" })
+    return false
+end
+
+local function getAutoloadConfig()
+    if isfile and isfile(AUTOLOAD_FILE) and readfile then
+        local ok, data = pcall(function() return HttpService:JSONDecode(readfile(AUTOLOAD_FILE)) end)
+        if ok and type(data) == "table" and data.enabled then
+            return data.config or "default"
+        end
+    end
+    return nil
+end
+
+local function setAutoload(enabled, name)
+    ensureConfigDir()
+    local data = { enabled = enabled, config = name or "default" }
+    if writefile then
+        writefile(AUTOLOAD_FILE, HttpService:JSONEncode(data))
+    end
+end
+
+-- Check Autoload on execution
+task.spawn(function()
+    task.wait(0.6)
+    local autoCfg = getAutoloadConfig()
+    if autoCfg then
+        loadConfig(autoCfg)
+    end
+end)
+
+TabSettings:Section({ Title = "ระบบจัดการคอนฟิก (Config Manager)", Icon = "package" })
+
+local configInput = TabSettings:Input({
+    Title = "ชื่อไฟล์ Config (Config Name)",
+    Desc = "พิมพ์ชื่อ Config ที่ต้องการสร้าง บันทึก หรือโหลด",
+    Icon = "pencil",
+    Placeholder = "เช่น default, fast_farm...",
+    Default = "default",
+    Callback = function(val)
+        if val and val ~= "" then currentConfigName = val end
+    end
+})
+
+TabSettings:Button({
+    Title = "บันทึก Config ปัจจุบัน (Save Config)",
+    Desc = "บันทึกการตั้งค่าทั้งหมดลงในไฟล์ตามชื่อข้างต้น",
+    Icon = "download",
+    Callback = function()
+        local name = configInput and configInput.GetValue and configInput:GetValue() or currentConfigName
+        saveConfig(name)
+    end
+})
+
+TabSettings:Button({
+    Title = "โหลด Config ที่เลือก (Load Config)",
+    Desc = "ดึงการตั้งค่าจากไฟล์ Config มาใช้งานทันที",
+    Icon = "upload",
+    Callback = function()
+        local name = configInput and configInput.GetValue and configInput:GetValue() or currentConfigName
+        loadConfig(name)
+    end
+})
+
+local isAutoLoadOn = (getAutoloadConfig() ~= nil)
+TabSettings:Toggle({
+    Title = "เปิดใช้งาน Autoload อัตโนมัติ (Autoload on Startup)",
+    Desc = "โหลด Config ชื่อนี้อัตโนมัติทุกครั้งเมื่อเปิดสคริปต์",
+    Icon = "refresh-cw",
+    Value = isAutoLoadOn,
+    Callback = function(val)
+        local name = configInput and configInput.GetValue and configInput:GetValue() or currentConfigName
+        setAutoload(val, name)
+        WindUI:Notify({
+            Title = "2K SCRIPT",
+            Content = val and ("เปิด Autoload: '" .. name .. "'") or "ปิด Autoload เรียบร้อย"
+        })
+    end
+})
+
 TabSettings:Section({ Title = "ความปลอดภัย & ระบบ (System)", Icon = "cpu" })
 
 TabSettings:Toggle({

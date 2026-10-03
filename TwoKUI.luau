@@ -152,7 +152,7 @@ function TwoKUI:CreateWindow(config)
     mainFrame.Parent = screenGui
 
     local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 18)
+    mainCorner.CornerRadius = UDim.new(0, 20)
     mainCorner.Parent = mainFrame
 
     -- Cyber Neon Animated Outer Stroke
@@ -171,23 +171,23 @@ function TwoKUI:CreateWindow(config)
     })
     strokeGrad.Parent = mainStroke
 
-    -- Anime Cyber Background Art Overlay (Clean generated masterpiece, zero baked UI)
+    -- Aesthetic Anime Sky Background Art Overlay
     local bgImage = Instance.new("ImageLabel")
     bgImage.Name = "BackgroundArt"
     bgImage.Size = UDim2.fromScale(1, 1)
     bgImage.Position = UDim2.fromScale(0, 0)
     bgImage.BackgroundTransparency = 1
     bgImage.ScaleType = Enum.ScaleType.Crop
-    bgImage.ImageTransparency = 0.18
+    bgImage.ImageTransparency = 0.12
     bgImage.ZIndex = 1
     bgImage.Parent = mainFrame
 
     local bgCorner = Instance.new("UICorner")
-    bgCorner.CornerRadius = UDim.new(0, 18)
+    bgCorner.CornerRadius = UDim.new(0, 20)
     bgCorner.Parent = bgImage
 
     task.spawn(function()
-        local artAsset = ensureAsset("2k_bg_art_v2.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art_v2.png")
+        local artAsset = ensureAsset("2k_bg_art_v3.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art_v3.png")
         if not artAsset then
             artAsset = ensureAsset("2k_bg_art.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art.png")
         end
@@ -201,23 +201,22 @@ function TwoKUI:CreateWindow(config)
     tintOverlay.Name = "TintOverlay"
     tintOverlay.Size = UDim2.fromScale(1, 1)
     tintOverlay.BackgroundColor3 = Color3.fromHex("#020610")
-    tintOverlay.BackgroundTransparency = 0.50
+    tintOverlay.BackgroundTransparency = 0.55
     tintOverlay.BorderSizePixel = 0
     tintOverlay.ZIndex = 2
     tintOverlay.Parent = mainFrame
 
     local tintCorner = Instance.new("UICorner")
-    tintCorner.CornerRadius = UDim.new(0, 18)
+    tintCorner.CornerRadius = UDim.new(0, 20)
     tintCorner.Parent = tintOverlay
 
     -- ─────────────────────────────────────────────────────────
-    -- TOPBAR (macOS Dots + 2K Starburst Logo + Controls)
+    -- TOPBAR (2K Starburst Logo + Title + Controls)
     -- ─────────────────────────────────────────────────────────
     local topbar = Instance.new("Frame")
     topbar.Name = "Topbar"
     topbar.Size = UDim2.new(1, 0, 0, 54)
-    topbar.BackgroundColor3 = Color3.fromHex("#050C1A")
-    topbar.BackgroundTransparency = 0.4
+    topbar.BackgroundTransparency = 1
     topbar.BorderSizePixel = 0
     topbar.ZIndex = 5
     topbar.Parent = mainFrame
@@ -231,43 +230,11 @@ function TwoKUI:CreateWindow(config)
     topbarLine.BorderSizePixel = 0
     topbarLine.Parent = topbar
 
-    -- macOS Control Dots (Red, Yellow, Green)
-    local dotsContainer = Instance.new("Frame")
-    dotsContainer.Name = "DotsContainer"
-    dotsContainer.Size = UDim2.fromOffset(56, 14)
-    dotsContainer.Position = UDim2.new(0, 18, 0.5, -7)
-    dotsContainer.BackgroundTransparency = 1
-    dotsContainer.Parent = topbar
-
-    local dotsLayout = Instance.new("UIListLayout")
-    dotsLayout.FillDirection = Enum.FillDirection.Horizontal
-    dotsLayout.Padding = UDim.new(0, 8)
-    dotsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-    dotsLayout.Parent = dotsContainer
-
-    local function makeDot(name, colorHex)
-        local dot = Instance.new("TextButton")
-        dot.Name = name
-        dot.Size = UDim2.fromOffset(12, 12)
-        dot.BackgroundColor3 = Color3.fromHex(colorHex)
-        dot.Text = ""
-        dot.AutoButtonColor = false
-        dot.Parent = dotsContainer
-        local c = Instance.new("UICorner")
-        c.CornerRadius = UDim.new(1, 0)
-        c.Parent = dot
-        return dot
-    end
-
-    local dotRed = makeDot("DotRed", "#FF5F56")
-    local dotYellow = makeDot("DotYellow", "#FFBD2E")
-    local dotGreen = makeDot("DotGreen", "#27C93F")
-
-    -- 2K Starburst Logo & Brand
+    -- 2K Starburst Logo & Brand (Clean Top-Left)
     local brandContainer = Instance.new("Frame")
     brandContainer.Name = "BrandContainer"
-    brandContainer.Size = UDim2.new(0, 260, 1, 0)
-    brandContainer.Position = UDim2.new(0, 86, 0, 0)
+    brandContainer.Size = UDim2.new(0, 280, 1, 0)
+    brandContainer.Position = UDim2.new(0, 18, 0, 0)
     brandContainer.BackgroundTransparency = 1
     brandContainer.Parent = topbar
 
@@ -394,8 +361,7 @@ function TwoKUI:CreateWindow(config)
     sidebar.Name = "Sidebar"
     sidebar.Size = UDim2.new(0, 215, 1, -54)
     sidebar.Position = UDim2.new(0, 0, 0, 54)
-    sidebar.BackgroundColor3 = Color3.fromHex("#030914")
-    sidebar.BackgroundTransparency = 0.4
+    sidebar.BackgroundTransparency = 1
     sidebar.BorderSizePixel = 0
     sidebar.ZIndex = 5
     sidebar.Parent = mainFrame
@@ -547,9 +513,7 @@ function TwoKUI:CreateWindow(config)
     end
 
     btnMin.MouseButton1Click:Connect(function() Window:Toggle() end)
-    dotYellow.MouseButton1Click:Connect(function() Window:Toggle() end)
     btnClose.MouseButton1Click:Connect(function() Window:Toggle() end)
-    dotRed.MouseButton1Click:Connect(function() Window:Toggle() end)
 
     -- Fullscreen Toggle
     local isMax = false
@@ -569,7 +533,6 @@ function TwoKUI:CreateWindow(config)
         end
     end
     btnMax.MouseButton1Click:Connect(toggleMax)
-    dotGreen.MouseButton1Click:Connect(toggleMax)
 
     -- ─────────────────────────────────────────────────────────
     -- CORNER RESIZE HANDLE (Interactive Scaler / Resizer)
@@ -808,6 +771,7 @@ function TwoKUI:CreateWindow(config)
         Tab.Dropdown = function(_, c) return getSec():Dropdown(c) end
         Tab.Button = function(_, c) return getSec():Button(c) end
         Tab.Paragraph = function(_, c) return getSec():Paragraph(c) end
+        Tab.Input = function(_, c) return getSec():Input(c) end
 
         -- ─────────────────────────────────────────────────────
         -- SECTION CARD BUILDER (Like in IMG_5499.png)
@@ -962,9 +926,9 @@ function TwoKUI:CreateWindow(config)
                 rightOffset = rightOffset or 60
                 local t = Instance.new("TextLabel")
                 t.Text = title
-                t.Font = Enum.Font.GothamMedium
+                t.Font = Enum.Font.GothamBold
                 t.TextSize = 13
-                t.TextColor3 = Color3.fromHex("#F1F5F9")
+                t.TextColor3 = Color3.fromHex("#FFFFFF")
                 t.TextXAlignment = Enum.TextXAlignment.Left
                 t.Size = UDim2.new(1, -(52 + rightOffset), 0, desc and 18 or 28)
                 t.Position = UDim2.new(0, 48, 0.5, desc and -16 or -14)
@@ -974,9 +938,9 @@ function TwoKUI:CreateWindow(config)
                 if desc and desc ~= "" then
                     local d = Instance.new("TextLabel")
                     d.Text = desc
-                    d.Font = Enum.Font.Gotham
-                    d.TextSize = 11
-                    d.TextColor3 = Color3.fromHex("#94A3B8")
+                    d.Font = Enum.Font.GothamBold
+                    d.TextSize = 10
+                    d.TextColor3 = Color3.fromHex("#CBD5E1")
                     d.TextXAlignment = Enum.TextXAlignment.Left
                     d.Size = UDim2.new(1, -(52 + rightOffset), 0, 14)
                     d.Position = UDim2.new(0, 48, 0.5, 2)
@@ -1441,12 +1405,70 @@ function TwoKUI:CreateWindow(config)
                 }
             end
 
+            -- 6. INPUT (Text Box / Config Input)
+            function Section:Input(cfg)
+                cfg = cfg or {}
+                local title = cfg.Title or "Input"
+                local desc = cfg.Desc or ""
+                local icon = cfg.Icon or "pencil"
+                local placeholder = cfg.Placeholder or "พิมพ์ข้อความ..."
+                local default = cfg.Default or ""
+                local callback = cfg.Callback or function() end
+
+                local row = makeRow(52)
+                makeRowIcon(row, icon)
+                makeRowTexts(row, title, desc, 160)
+
+                local boxContainer = Instance.new("Frame")
+                boxContainer.Size = UDim2.fromOffset(145, 30)
+                boxContainer.Position = UDim2.new(1, -155, 0.5, -15)
+                boxContainer.BackgroundColor3 = Color3.fromHex("#081A33")
+                boxContainer.BackgroundTransparency = 0.2
+                boxContainer.Parent = row
+
+                local bc = Instance.new("UICorner")
+                bc.CornerRadius = UDim.new(0, 8)
+                bc.Parent = boxContainer
+
+                local bs = Instance.new("UIStroke")
+                bs.Color = Color3.fromHex("#00E5FF")
+                bs.Thickness = 1.2
+                bs.Transparency = 0.6
+                bs.Parent = boxContainer
+
+                local tBox = Instance.new("TextBox")
+                tBox.Size = UDim2.new(1, -16, 1, 0)
+                tBox.Position = UDim2.new(0, 8, 0, 0)
+                tBox.BackgroundTransparency = 1
+                tBox.Text = default
+                tBox.PlaceholderText = placeholder
+                tBox.PlaceholderColor3 = Color3.fromHex("#64748B")
+                tBox.Font = Enum.Font.GothamBold
+                tBox.TextSize = 11
+                tBox.TextColor3 = Color3.fromHex("#FFFFFF")
+                tBox.ClearTextOnFocus = false
+                tBox.TextXAlignment = Enum.TextXAlignment.Left
+                tBox.Parent = boxContainer
+
+                tBox.FocusLost:Connect(function(enterPressed)
+                    task.spawn(callback, tBox.Text, enterPressed)
+                end)
+
+                return {
+                    GetValue = function() return tBox.Text end,
+                    SetValue = function(v) tBox.Text = tostring(v) end,
+                    TextBox = tBox,
+                    Row = row
+                }
+            end
+
             -- Pass-through aliases directly onto Tab if preferred
             Tab.Toggle = function(_, c) return Section:Toggle(c) end
             Tab.Slider = function(_, c) return Section:Slider(c) end
             Tab.Dropdown = function(_, c) return Section:Dropdown(c) end
             Tab.Button = function(_, c) return Section:Button(c) end
             Tab.Paragraph = function(_, c) return Section:Paragraph(c) end
+            Tab.Input = function(_, c) return Section:Input(c) end
 
             return Section
         end
