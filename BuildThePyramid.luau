@@ -483,8 +483,12 @@ pcall(function()
             end
         end
     end
-    if WindUI and WindUI.Window and typeof(WindUI.Window) == "table" and WindUI.Window.Destroy then
-        pcall(function() WindUI.Window:Destroy() end)
+    if WindUI then
+        if WindUI.Window and typeof(WindUI.Window) == "table" and WindUI.Window.Destroy then
+            pcall(function() WindUI.Window:Destroy() end)
+        end
+        WindUI.Window = nil
+        WindUI.ScreenGui = nil
     end
 end)
 
