@@ -45,7 +45,7 @@ local ICON_MAP = {
     ["mountain"]         = "rbxassetid://10734950309",
     ["dumbbell"]         = "rbxassetid://10747373176",
     ["zap"]              = "rbxassetid://10709810948",
-    ["user"]             = "rbxassetid://10747373176",
+    ["user"]             = "rbxassetid://10709790202",
     ["map-pin"]          = "rbxassetid://10734918191",
     ["settings"]         = "rbxassetid://10734950020",
     ["activity"]         = "rbxassetid://10709769841",
@@ -84,13 +84,22 @@ local ICON_MAP = {
     ["upload"]           = "rbxassetid://10747373079",
     ["fast-forward"]     = "rbxassetid://10723355819",
     ["sparkles"]         = "rbxassetid://10734952044",
-    ["square"]           = "rbxassetid://10734952875"
+    ["square"]           = "rbxassetid://10709790387",
+    ["box"]              = "rbxassetid://10734924532",
+    ["flag"]             = "rbxassetid://10723356197",
+    ["footprints"]       = "rbxassetid://10747372992",
+    ["map"]              = "rbxassetid://10734918191",
+    ["octagon-x"]        = "rbxassetid://10709790387",
+    ["pencil"]           = "rbxassetid://10734924948",
+    ["repeat"]           = "rbxassetid://10734940380",
+    ["trending-up"]      = "rbxassetid://10709782497",
+    ["unlock"]           = "rbxassetid://10734950150"
 }
 
 local function resolveIcon(name)
-    if not name or name == "" then return "" end
+    if not name or name == "" then return "rbxassetid://10709810948" end
     if string.find(name, "rbxasset") then return name end
-    return ICON_MAP[name] or "rbxassetid://10709791437"
+    return ICON_MAP[name] or "rbxassetid://10709810948"
 end
 
 -- Helper: Ensure local image asset
@@ -187,7 +196,10 @@ function TwoKUI:CreateWindow(config)
     bgCorner.Parent = bgImage
 
     task.spawn(function()
-        local artAsset = ensureAsset("2k_bg_art_v3.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art_v3.png")
+        local artAsset = ensureAsset("2k_bg_art_v4.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art_v4.png")
+        if not artAsset then
+            artAsset = ensureAsset("2k_bg_art_v3.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art_v3.png")
+        end
         if not artAsset then
             artAsset = ensureAsset("2k_bg_art.png", "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/assets/2k_bg_art.png")
         end
@@ -279,18 +291,52 @@ function TwoKUI:CreateWindow(config)
     subTitleLbl.BackgroundTransparency = 1
     subTitleLbl.Parent = brandContainer
 
-    -- Slogan: "Beyond Your Limits"
-    local sloganLbl = Instance.new("TextLabel")
-    sloganLbl.Name = "Slogan"
-    sloganLbl.Text = "Beyond Your Limits."
-    sloganLbl.Font = Enum.Font.GothamMedium
-    sloganLbl.TextSize = 13
-    sloganLbl.TextColor3 = Color3.fromHex("#38BDF8")
-    sloganLbl.TextTransparency = 0.15
-    sloganLbl.Size = UDim2.new(0, 200, 1, 0)
-    sloganLbl.Position = UDim2.new(0.5, -80, 0, 0)
-    sloganLbl.BackgroundTransparency = 1
-    sloganLbl.Parent = topbar
+    -- Real-time FPS & Ping Tracker (Replaced "Beyond Your Limits")
+    local perfLbl = Instance.new("TextLabel")
+    perfLbl.Name = "PerfTracker"
+    perfLbl.Text = "FPS: 60  |  Ping: -- ms"
+    perfLbl.Font = Enum.Font.GothamBold
+    perfLbl.TextSize = 12
+    perfLbl.TextColor3 = Color3.fromHex("#00E5FF")
+    perfLbl.TextTransparency = 0.1
+    perfLbl.Size = UDim2.new(0, 220, 1, 0)
+    perfLbl.Position = UDim2.new(0.5, -110, 0, 0)
+    perfLbl.BackgroundTransparency = 1
+    perfLbl.Parent = topbar
+
+    task.spawn(function()
+        local frameCount = 0
+        local lastTime = os.clock()
+        local fps = 60
+        local Stats = game:GetService("Stats")
+
+        local renderConn
+        renderConn = RunService.RenderStepped:Connect(function()
+            if not mainFrame.Parent then
+                if renderConn then renderConn:Disconnect() end
+                return
+            end
+            frameCount = frameCount + 1
+            local now = os.clock()
+            if now - lastTime >= 0.5 then
+                fps = math.floor(frameCount / (now - lastTime))
+                frameCount = 0
+                lastTime = now
+
+                local ping = 0
+                pcall(function()
+                    ping = math.floor(LocalPlayer:GetNetworkPing() * 1000)
+                end)
+                if ping <= 0 then
+                    pcall(function()
+                        ping = math.floor(Stats.PerformanceStats.Ping:GetValue())
+                    end)
+                end
+
+                perfLbl.Text = string.format("FPS: %d  |  Ping: %d ms", fps, ping)
+            end
+        end)
+    end)
 
     -- Window Controls (Minimize / Maximize / Close)
     local controlsFrame = Instance.new("Frame")
@@ -915,7 +961,8 @@ function TwoKUI:CreateWindow(config)
                 img.Size = UDim2.fromOffset(16, 16)
                 img.Position = UDim2.new(0.5, -8, 0.5, -8)
                 img.BackgroundTransparency = 1
-                img.Image = resolveIcon(iconName)
+                local resolved = resolveIcon(iconName)
+                img.Image = (resolved and resolved ~= "") and resolved or "rbxassetid://10709810948"
                 img.ImageColor3 = Color3.fromHex("#00E5FF")
                 img.Parent = b
                 return b
@@ -1398,9 +1445,19 @@ function TwoKUI:CreateWindow(config)
                 dLbl.BackgroundTransparency = 1
                 dLbl.Parent = row
 
+                local function setTitle(selfOrText, maybeText)
+                    local text = (type(selfOrText) == "table" and maybeText) or selfOrText
+                    tLbl.Text = tostring(text or "")
+                end
+
+                local function setDesc(selfOrText, maybeText)
+                    local text = (type(selfOrText) == "table" and maybeText) or selfOrText
+                    dLbl.Text = tostring(text or "")
+                end
+
                 return {
-                    SetTitle = function(newT) tLbl.Text = newT end,
-                    SetDesc = function(newD) dLbl.Text = newD end,
+                    SetTitle = setTitle,
+                    SetDesc = setDesc,
                     Row = row
                 }
             end

@@ -502,8 +502,75 @@ local function rpcPlace(slot)
     return false
 end
 
+-- ─────────────────────────────────────────────────────────────
+-- FPS BOOSTER ENGINE (Ultra Performance & Anti-Lag)
+-- ─────────────────────────────────────────────────────────────
+local origLighting = {}
+local fpsBoostActive = false
+
+local function boostFPS(enable)
+    fpsBoostActive = enable
+    State.BoostFPS = enable
+    local Lighting = safeService("Lighting") or game:GetService("Lighting")
+    local Terrain = workspace:FindFirstChildOfClass("Terrain")
+
+    pcall(function()
+        if enable then
+            origLighting.GlobalShadows = Lighting.GlobalShadows
+            origLighting.FogEnd = Lighting.FogEnd
+            origLighting.Brightness = Lighting.Brightness
+
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 9e9
+            Lighting.Brightness = 1
+
+            for _, effect in ipairs(Lighting:GetChildren()) do
+                if effect:IsA("PostProcessEffect") or effect:IsA("BloomEffect") or effect:IsA("BlurEffect") or effect:IsA("SunRaysEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("DepthOfFieldEffect") then
+                    effect.Enabled = false
+                end
+            end
+
+            if Terrain then
+                Terrain.WaterWaveSize = 0
+                Terrain.WaterWaveSpeed = 0
+                Terrain.WaterReflectance = 0
+                Terrain.WaterTransparency = 0
+            end
+
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    obj.CastShadow = false
+                    if not (obj.Parent and obj.Parent:FindFirstChildOfClass("Humanoid")) then
+                        obj.Material = Enum.Material.SmoothPlastic
+                    end
+                elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
+                    obj.Enabled = false
+                end
+            end
+
+            pcall(function()
+                settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+            end)
+        else
+            if origLighting.GlobalShadows ~= nil then
+                Lighting.GlobalShadows = origLighting.GlobalShadows
+                Lighting.FogEnd = origLighting.FogEnd
+                Lighting.Brightness = origLighting.Brightness
+            end
+            for _, effect in ipairs(Lighting:GetChildren()) do
+                if effect:IsA("PostProcessEffect") or effect:IsA("BloomEffect") or effect:IsA("BlurEffect") or effect:IsA("SunRaysEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("DepthOfFieldEffect") then
+                    effect.Enabled = true
+                end
+            end
+        end
+    end)
+end
+
 -- State Management
 local State = {
+    -- Performance & FPS
+    BoostFPS               = false,
+
     -- Auto Pyramid Farm
     AutoBuildLoop          = false,
     FarmMovementMode       = "Fast Teleport",
@@ -628,25 +695,41 @@ local statParagraph = TabDashboard:Paragraph({
     Icon = "chart-column"
 })
 
-task.spawn(function()
-    while task.wait(1.5) do
-        if not _G.TwoSkiPyramidRunning or _G.TwoSkiActivePyramidToken ~= myToken then break end
-        pcall(function()
-            local ls = LocalPlayer:FindFirstChild("leaderstats")
-            local strength = (ls and ls:FindFirstChild("Strength") and ls.Strength.Value) or LocalPlayer:GetAttribute("StrengthLevel") or 0
-            local speed = (ls and ls:FindFirstChild("Speed") and ls.Speed.Value) or LocalPlayer:GetAttribute("SpeedLevel") or 0
-            local blocks = getCarryCount()
-            local cap = getCarryCapacity()
-            local pyramids = (ls and ls:FindFirstChild("Pyramids") and ls.Pyramids.Value) or 0
-            local bankedSec = LocalPlayer:GetAttribute("BankedSeconds") or 0
+local function updateDashboardStats()
+    pcall(function()
+        local ls = LocalPlayer:FindFirstChild("leaderstats")
+        local strength = (ls and ls:FindFirstChild("Strength") and ls.Strength.Value) or LocalPlayer:GetAttribute("StrengthLevel") or 0
+        local speed = (ls and ls:FindFirstChild("Speed") and ls.Speed.Value) or LocalPlayer:GetAttribute("SpeedLevel") or 0
+        local blocks = getCarryCount()
+        local cap = getCarryCapacity()
+        local pyramids = (ls and ls:FindFirstChild("Pyramids") and ls.Pyramids.Value) or 0
+        local bankedSec = LocalPlayer:GetAttribute("BankedSeconds") or 0
 
-            statParagraph:SetTitle(string.format("บล็อกที่ถือ: %s / %s | พีระมิดที่สร้าง: %s", tostring(blocks), tostring(cap), tostring(pyramids)))
-            statParagraph:SetDesc(string.format("Strength: %s  |  Speed: %s  |  เวลาสะสม: %s วิ", tostring(strength), tostring(speed), tostring(bankedSec)))
-        end)
+        statParagraph:SetTitle(string.format("บล็อกที่ถือ: %s / %s | พีระมิดที่สร้าง: %s", tostring(blocks), tostring(cap), tostring(pyramids)))
+        statParagraph:SetDesc(string.format("Strength: %s  |  Speed: %s  |  เวลาสะสม: %s วิ", tostring(strength), tostring(speed), tostring(bankedSec)))
+    end)
+end
+
+updateDashboardStats()
+
+task.spawn(function()
+    while task.wait(1.0) do
+        if not Window or not Window.ScreenGui or not Window.ScreenGui.Parent then break end
+        updateDashboardStats()
     end
 end)
 
 TabDashboard:Section({ Title = "ทางลัดด่วน (Quick Actions)", Icon = "sparkles" })
+
+TabDashboard:Toggle({
+    Title = "โหมดเร่งความเร็ว (Boost FPS / Anti-Lag)",
+    Desc = "ลดเอฟเฟกต์ภาพ ปิดเงา ปรับกราฟิก Smooth ลดความหน่วงเกมสูงสุด",
+    Icon = "zap",
+    Value = State.BoostFPS,
+    Callback = function(val)
+        boostFPS(val)
+    end
+})
 
 TabDashboard:Button({
     Title = "หยิบหินเต็มความจุทันที (Instant Max Pickup)",
@@ -901,21 +984,27 @@ local gymStatParagraph = TabGym:Paragraph({
     Icon = "chart-column"
 })
 
+local function updateGymStats()
+    pcall(function()
+        local ls = LocalPlayer:FindFirstChild("leaderstats")
+        local str = (ls and ls:FindFirstChild("Strength") and ls.Strength.Value) or LocalPlayer:GetAttribute("StrengthLevel") or 0
+        local spd = (ls and ls:FindFirstChild("Speed") and ls.Speed.Value) or LocalPlayer:GetAttribute("SpeedLevel") or 0
+        local strMul = LocalPlayer:GetAttribute("StrengthMultiplier") or 1
+        local spdMul = LocalPlayer:GetAttribute("SpeedMultiplier") or 1
+        local benchSt = LocalPlayer:GetAttribute("BenchStation")
+        local benchStatus = benchSt and string.format("กำลังฝึกแท่น %s (%sx)", tostring(benchSt), tostring(strMul)) or "ไม่ได้ฝึก (Idle)"
+
+        gymStatParagraph:SetTitle(string.format("Strength: Lv.%s (คูณ %sx)  |  Speed: Lv.%s (คูณ %sx)", tostring(str), tostring(strMul), tostring(spd), tostring(spdMul)))
+        gymStatParagraph:SetDesc(string.format("สถานะแท่น Bench: %s  |  แท่นที่ระบบแนะนำ: แท่น %s", benchStatus, getBestBenchStationId()))
+    end)
+end
+
+updateGymStats()
+
 task.spawn(function()
     while task.wait(1.0) do
-        if not _G.TwoSkiPyramidRunning or _G.TwoSkiActivePyramidToken ~= myToken then break end
-        pcall(function()
-            local ls = LocalPlayer:FindFirstChild("leaderstats")
-            local str = (ls and ls:FindFirstChild("Strength") and ls.Strength.Value) or LocalPlayer:GetAttribute("StrengthLevel") or 0
-            local spd = (ls and ls:FindFirstChild("Speed") and ls.Speed.Value) or LocalPlayer:GetAttribute("SpeedLevel") or 0
-            local strMul = LocalPlayer:GetAttribute("StrengthMultiplier") or 1
-            local spdMul = LocalPlayer:GetAttribute("SpeedMultiplier") or 1
-            local benchSt = LocalPlayer:GetAttribute("BenchStation")
-            local benchStatus = benchSt and string.format("กำลังฝึกแท่น %s (%sx)", tostring(benchSt), tostring(strMul)) or "ไม่ได้ฝึก (Idle)"
-
-            gymStatParagraph:SetTitle(string.format("Strength: Lv.%s (คูณ %sx)  |  Speed: Lv.%s (คูณ %sx)", tostring(str), tostring(strMul), tostring(spd), tostring(spdMul)))
-            gymStatParagraph:SetDesc(string.format("สถานะแท่น Bench: %s  |  แท่นที่ระบบแนะนำ: แท่น %s", benchStatus, getBestBenchStationId()))
-        end)
+        if not Window or not Window.ScreenGui or not Window.ScreenGui.Parent then break end
+        updateGymStats()
     end
 end)
 
@@ -1445,6 +1534,18 @@ TabSettings:Slider({
     end
 })
 
+TabSettings:Section({ Title = "ประสิทธิภาพ & บูสต์ความเร็ว (Performance)", Icon = "zap" })
+
+TabSettings:Toggle({
+    Title = "โหมดเร่งความเร็ว (Boost FPS / Anti-Lag)",
+    Desc = "ปิดเงา ปิดเอฟเฟกต์อนุภาค ปรับโมเดล SmoothPlastic ดัน FPS ลื่นหัวแตก",
+    Icon = "zap",
+    Value = State.BoostFPS,
+    Callback = function(val)
+        boostFPS(val)
+    end
+})
+
 -- ─────────────────────────────────────────────────────────────
 -- CONFIG MANAGER (ระบบสร้าง, บันทึก, โหลด, และ AUTOLOAD)
 -- ─────────────────────────────────────────────────────────────
@@ -1466,6 +1567,7 @@ local function saveConfig(name)
     name = (name and name ~= "") and name or "default"
     ensureConfigDir()
     local data = {
+        BoostFPS = State.BoostFPS,
         AutoBuildLoop = State.AutoBuildLoop,
         AutoPickupOnly = State.AutoPickupOnly,
         AutoPlaceOnly = State.AutoPlaceOnly,
