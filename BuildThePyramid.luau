@@ -706,9 +706,9 @@ local TabSettings  = Window:Tab({ Title = "ตั้งค่า", Icon = "setti
 -- ─────────────────────────────────────────────────────────────
 -- TAB 1: แดชบอร์ด & สถิติสด (DASHBOARD)
 -- ─────────────────────────────────────────────────────────────
-TabDashboard:Section({ Title = "สถิติตัวละครสด (Live Stats)", Icon = "activity" })
+local statSec = TabDashboard:Section({ Title = "สถิติตัวละครสด (Live Stats)", Icon = "activity" })
 
-local statParagraph = TabDashboard:Paragraph({
+local statParagraph = statSec:Paragraph({
     Title = "กำลังโหลดข้อมูลตัวละคร...",
     Desc = "รอซิงค์ข้อมูลจากเซิร์ฟเวอร์สักครู่",
     Icon = "chart-column"
@@ -721,7 +721,15 @@ local function updateDashboardStats()
         local strength = (ls and ls:FindFirstChild("Strength") and ls.Strength.Value) or LocalPlayer:GetAttribute("StrengthLevel") or 0
         local speed = (ls and ls:FindFirstChild("Speed") and ls.Speed.Value) or LocalPlayer:GetAttribute("SpeedLevel") or 0
         local blocks = LocalPlayer:GetAttribute("CarriedCount") or (ls and ls:FindFirstChild("Blocks") and ls.Blocks.Value) or 0
-        local cap = getCarryCapacity()
+        
+        local str = LocalPlayer:GetAttribute("StrengthLevel") or 1
+        local bulk = LocalPlayer:GetAttribute("UpgradeLevel_BulkPickup") or 0
+        local cap = math.clamp(str + 1 + bulk, 2, 60)
+        pcall(function()
+            local dynamicCap = getCarryCapacity()
+            if type(dynamicCap) == "number" and dynamicCap > 0 then cap = dynamicCap end
+        end)
+
         local pyramids = (ls and ls:FindFirstChild("Pyramids") and ls.Pyramids.Value) or 0
         local bankedSec = LocalPlayer:GetAttribute("BankedSeconds") or 0
 
