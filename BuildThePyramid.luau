@@ -1269,6 +1269,12 @@ _G.TwoSkiPyramidCleanup = function()
     end)
 end
 
+pcall(function()
+    if Window and Window.SelectTab then
+        Window:SelectTab(1)
+    end
+end)
+
 _G.TwoSkiPyramidLoaded = true
 
 WindUI:Notify({
