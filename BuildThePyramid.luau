@@ -1,6 +1,6 @@
 -- [[ 2K SCRIPT - BUILD THE PYRAMID MASTER AUTO FARM & GYM HUB ]] --
 -- Game: Build the Pyramid! - PlaceId: 123720558354386
--- UI Engine: WindUI Amber Gold (Desert Pharaoh Edition) + macOS 3-Dots + Responsive Mobile & PC Layout
+-- UI Engine: 2KUI Cyber-Neon Engine (Desert Pharaoh Edition) + macOS 3-Dots + Responsive Mobile & PC Layout
 -- Developed by cook45 for clack
 
 local myToken = tick()
@@ -787,7 +787,7 @@ TabDashboard:Button({
                 rpcPickup(qPart)
                 task.wait(0.08)
             end
-            WindUI:Notify({ Title = "2K SCRIPT", Content = "หยิบหินเรียบร้อยแล้ว!" })
+            TwoKUI:Notify({ Title = "2K SCRIPT", Content = "หยิบหินเรียบร้อยแล้ว!" })
         end)
     end
 })
@@ -822,7 +822,7 @@ TabDashboard:Button({
             if holding and rt and irt and type(irt.endPlaceHold) == "function" then
                 pcall(function() irt.endPlaceHold(rt) end)
             end
-            WindUI:Notify({ Title = "2K SCRIPT", Content = "วางหินลงพีระมิดเรียบร้อย!" })
+            TwoKUI:Notify({ Title = "2K SCRIPT", Content = "วางหินลงพีระมิดเรียบร้อย!" })
         end)
     end
 })
@@ -1064,11 +1064,11 @@ TabGym:Toggle({
                 local stationInfo = GYM_BENCH_STATIONS[State.SelectedGymStation]
                 local targetId = (stationInfo and stationInfo.id) or "auto"
                 startBenchSession(targetId)
-                WindUI:Notify({ Title = "2K SCRIPT", Content = "เริ่มออโต้เทรนยกน้ำหนักเรียบร้อย!" })
+                TwoKUI:Notify({ Title = "2K SCRIPT", Content = "เริ่มออโต้เทรนยกน้ำหนักเรียบร้อย!" })
             end)
         else
             stopBenchSession()
-            WindUI:Notify({ Title = "2K SCRIPT", Content = "หยุดยกน้ำหนักเรียบร้อย!" })
+            TwoKUI:Notify({ Title = "2K SCRIPT", Content = "หยุดยกน้ำหนักเรียบร้อย!" })
         end
     end
 })
@@ -1109,7 +1109,7 @@ TabGym:Button({
     Callback = function()
         State.AutoGymTrain = false
         stopBenchSession()
-        WindUI:Notify({ Title = "2K SCRIPT", Content = "หยุดเทรนพลังเรียบร้อย!" })
+        TwoKUI:Notify({ Title = "2K SCRIPT", Content = "หยุดเทรนพลังเรียบร้อย!" })
     end
 })
 
@@ -1125,7 +1125,7 @@ TabGym:Toggle({
         if val then
             State.AutoGymTrain = false
             stopBenchSession()
-            WindUI:Notify({ Title = "2K SCRIPT", Content = "เริ่มออโต้เทรนวิ่งลู่เรียบร้อย!" })
+            TwoKUI:Notify({ Title = "2K SCRIPT", Content = "เริ่มออโต้เทรนวิ่งลู่เรียบร้อย!" })
         end
     end
 })
@@ -1158,7 +1158,7 @@ TabGym:Button({
     Icon = "square",
     Callback = function()
         State.AutoTreadmillTrain = false
-        WindUI:Notify({ Title = "2K SCRIPT", Content = "หยุดเทรนวิ่งลู่เรียบร้อย!" })
+        TwoKUI:Notify({ Title = "2K SCRIPT", Content = "หยุดเทรนวิ่งลู่เรียบร้อย!" })
     end
 })
 
@@ -1173,7 +1173,7 @@ TabGym:Toggle({
         State.BypassGymPrompt = val
         if val then
             bypassAllGymPrompts()
-            WindUI:Notify({ Title = "2K SCRIPT", Content = "ปลดล็อคระยะกด ProximityPrompt เรียบร้อย!" })
+            TwoKUI:Notify({ Title = "2K SCRIPT", Content = "ปลดล็อคระยะกด ProximityPrompt เรียบร้อย!" })
         end
     end
 })
@@ -1186,7 +1186,7 @@ TabGym:Button({
         State.AutoGymTrain = false
         State.AutoTreadmillTrain = false
         stopBenchSession()
-        WindUI:Notify({ Title = "2K SCRIPT", Content = "หยุดการฝึกทั้งหมดเรียบร้อย!" })
+        TwoKUI:Notify({ Title = "2K SCRIPT", Content = "หยุดการฝึกทั้งหมดเรียบร้อย!" })
     end
 })
 
@@ -1319,7 +1319,7 @@ TabUpgrades:Button({
                     task.wait(0.2)
                 end
             end
-            WindUI:Notify({ Title = "2K SCRIPT", Content = "กดเคลมโค้ดเรียบร้อยแล้ว!" })
+            TwoKUI:Notify({ Title = "2K SCRIPT", Content = "กดเคลมโค้ดเรียบร้อยแล้ว!" })
         end)
     end
 })
@@ -1522,7 +1522,7 @@ TabTeleport:Dropdown({
         local stationInfo = GYM_BENCH_STATIONS[val]
         if stationInfo and stationInfo.pos then
             safeTeleport(stationInfo.pos)
-            WindUI:Notify({ Title = "2K SCRIPT", Content = "วาร์ปไป " .. val .. " เรียบร้อย!" })
+            TwoKUI:Notify({ Title = "2K SCRIPT", Content = "วาร์ปไป " .. val .. " เรียบร้อย!" })
         end
     end
 })
@@ -1642,7 +1642,7 @@ local function saveConfig(name)
     local path = GAME_CONFIG_FOLDER .. "/" .. name .. ".json"
     if writefile then
         writefile(path, json)
-        WindUI:Notify({ Title = "2K SCRIPT", Content = "บันทึก Config '" .. name .. "' สำเร็จ!" })
+        TwoKUI:Notify({ Title = "2K SCRIPT", Content = "บันทึก Config '" .. name .. "' สำเร็จ!" })
         return true
     end
     return false
@@ -1660,11 +1660,11 @@ local function loadConfig(name)
                     State[k] = v
                 end
             end
-            WindUI:Notify({ Title = "2K SCRIPT", Content = "โหลด Config '" .. name .. "' สำเร็จ!" })
+            TwoKUI:Notify({ Title = "2K SCRIPT", Content = "โหลด Config '" .. name .. "' สำเร็จ!" })
             return true
         end
     end
-    WindUI:Notify({ Title = "2K SCRIPT", Content = "ไม่พบไฟล์ Config '" .. name .. "'!" })
+    TwoKUI:Notify({ Title = "2K SCRIPT", Content = "ไม่พบไฟล์ Config '" .. name .. "'!" })
     return false
 end
 
@@ -1737,7 +1737,7 @@ TabSettings:Toggle({
     Callback = function(val)
         local name = configInput and configInput.GetValue and configInput:GetValue() or currentConfigName
         setAutoload(val, name)
-        WindUI:Notify({
+        TwoKUI:Notify({
             Title = "2K SCRIPT",
             Content = val and ("เปิด Autoload: '" .. name .. "'") or "ปิด Autoload เรียบร้อย"
         })
@@ -1806,7 +1806,7 @@ end)
 
 _G.TwoSkiPyramidLoaded = true
 
-WindUI:Notify({
+TwoKUI:Notify({
     Title = "2K SCRIPT",
     Content = "โหลดสคริปต์ Build the Pyramid! สำเร็จเรียบร้อย!",
     Duration = 5

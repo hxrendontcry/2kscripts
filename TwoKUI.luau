@@ -1026,12 +1026,22 @@ function TwoKUI:CreateWindow(config)
                 makeRowIcon(row, icon)
                 makeRowTexts(row, title, desc, 60)
 
+                local rowClick = Instance.new("TextButton")
+                rowClick.Name = "RowClickArea"
+                rowClick.Size = UDim2.fromScale(1, 1)
+                rowClick.BackgroundTransparency = 1
+                rowClick.Text = ""
+                rowClick.AutoButtonColor = false
+                rowClick.ZIndex = 4
+                rowClick.Parent = row
+
                 local pill = Instance.new("TextButton")
                 pill.Size = UDim2.fromOffset(46, 24)
                 pill.Position = UDim2.new(1, -56, 0.5, -12)
                 pill.BackgroundColor3 = val and Color3.fromHex("#00E5FF") or Color3.fromHex("#1E293B")
                 pill.Text = ""
                 pill.AutoButtonColor = false
+                pill.ZIndex = 5
                 pill.Parent = row
 
                 local pillCorner = Instance.new("UICorner")
@@ -1043,6 +1053,7 @@ function TwoKUI:CreateWindow(config)
                 knob.Position = val and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
                 knob.BackgroundColor3 = Color3.fromHex("#FFFFFF")
                 knob.BorderSizePixel = 0
+                knob.ZIndex = 6
                 knob.Parent = pill
 
                 local knobCorner = Instance.new("UICorner")
@@ -1058,8 +1069,24 @@ function TwoKUI:CreateWindow(config)
                     task.spawn(callback, val)
                 end
 
+                rowClick.MouseButton1Click:Connect(function()
+                    updateToggle(not val)
+                end)
                 pill.MouseButton1Click:Connect(function()
                     updateToggle(not val)
+                end)
+
+                rowClick.MouseEnter:Connect(function()
+                    TweenService:Create(row, TweenInfo.new(0.15), {
+                        BackgroundColor3 = Color3.fromHex("#0E2342"),
+                        BackgroundTransparency = 0.1
+                    }):Play()
+                end)
+                rowClick.MouseLeave:Connect(function()
+                    TweenService:Create(row, TweenInfo.new(0.15), {
+                        BackgroundColor3 = Color3.fromHex("#08182E"),
+                        BackgroundTransparency = 0.2
+                    }):Play()
                 end)
 
                 return {
@@ -1092,19 +1119,31 @@ function TwoKUI:CreateWindow(config)
                 numBadge.Font = Enum.Font.GothamBold
                 numBadge.TextSize = 11
                 numBadge.TextColor3 = Color3.fromHex("#00E5FF")
+                numBadge.ZIndex = 5
                 numBadge.Parent = row
                 local nbc = Instance.new("UICorner")
                 nbc.CornerRadius = UDim.new(0, 6)
                 nbc.Parent = numBadge
 
-                -- Slider Track
-                local track = Instance.new("TextButton")
-                track.Size = UDim2.fromOffset(130, 6)
-                track.Position = UDim2.new(1, -140, 0.5, -3)
+                -- Slider Hit Area (Generous touch/click box)
+                local hitArea = Instance.new("TextButton")
+                hitArea.Name = "SliderHitArea"
+                hitArea.Size = UDim2.fromOffset(140, 36)
+                hitArea.Position = UDim2.new(1, -145, 0.5, -18)
+                hitArea.BackgroundTransparency = 1
+                hitArea.Text = ""
+                hitArea.AutoButtonColor = false
+                hitArea.ZIndex = 6
+                hitArea.Parent = row
+
+                -- Visual Slider Track
+                local track = Instance.new("Frame")
+                track.Size = UDim2.new(1, -10, 0, 6)
+                track.Position = UDim2.new(0, 5, 0.5, -3)
                 track.BackgroundColor3 = Color3.fromHex("#0F1E36")
-                track.Text = ""
-                track.AutoButtonColor = false
-                track.Parent = row
+                track.BorderSizePixel = 0
+                track.ZIndex = 6
+                track.Parent = hitArea
 
                 local tc = Instance.new("UICorner")
                 tc.CornerRadius = UDim.new(1, 0)
@@ -1115,17 +1154,19 @@ function TwoKUI:CreateWindow(config)
                 fill.Size = UDim2.new(pct, 0, 1, 0)
                 fill.BackgroundColor3 = Color3.fromHex("#00E5FF")
                 fill.BorderSizePixel = 0
+                fill.ZIndex = 7
                 fill.Parent = track
                 local fc = Instance.new("UICorner")
                 fc.CornerRadius = UDim.new(1, 0)
                 fc.Parent = fill
 
                 local thumb = Instance.new("Frame")
-                thumb.Size = UDim2.fromOffset(14, 14)
+                thumb.Size = UDim2.fromOffset(16, 16)
                 thumb.AnchorPoint = Vector2.new(0.5, 0.5)
                 thumb.Position = UDim2.new(pct, 0, 0.5, 0)
                 thumb.BackgroundColor3 = Color3.fromHex("#FFFFFF")
                 thumb.BorderSizePixel = 0
+                thumb.ZIndex = 8
                 thumb.Parent = track
                 local thCorner = Instance.new("UICorner")
                 thCorner.CornerRadius = UDim.new(1, 0)
@@ -1135,6 +1176,7 @@ function TwoKUI:CreateWindow(config)
                 local function updateFromPos(x)
                     local trackX = track.AbsolutePosition.X
                     local trackW = track.AbsoluteSize.X
+                    if trackW <= 0 then return end
                     local alpha = math.clamp((x - trackX) / trackW, 0, 1)
                     local rawVal = minVal + (alpha * (maxVal - minVal))
                     local val = (maxVal - minVal > 20) and math.round(rawVal) or (math.round(rawVal * 100) / 100)
@@ -1145,7 +1187,7 @@ function TwoKUI:CreateWindow(config)
                     task.spawn(callback, val)
                 end
 
-                track.InputBegan:Connect(function(input)
+                hitArea.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         sliding = true
                         updateFromPos(input.Position.X)
@@ -1311,6 +1353,7 @@ function TwoKUI:CreateWindow(config)
                     end
                 end
 
+                header.MouseButton1Click:Connect(toggleMenu)
                 dropBtn.MouseButton1Click:Connect(toggleMenu)
 
                 for _, opt in ipairs(values) do
@@ -1388,6 +1431,15 @@ function TwoKUI:CreateWindow(config)
                 makeRowIcon(row, icon)
                 makeRowTexts(row, title, desc, 80)
 
+                local rowClick = Instance.new("TextButton")
+                rowClick.Name = "RowClickArea"
+                rowClick.Size = UDim2.fromScale(1, 1)
+                rowClick.BackgroundTransparency = 1
+                rowClick.Text = ""
+                rowClick.AutoButtonColor = false
+                rowClick.ZIndex = 4
+                rowClick.Parent = row
+
                 local actBtn = Instance.new("TextButton")
                 actBtn.Size = UDim2.fromOffset(72, 28)
                 actBtn.Position = UDim2.new(1, -82, 0.5, -14)
@@ -1398,6 +1450,7 @@ function TwoKUI:CreateWindow(config)
                 actBtn.TextSize = 11
                 actBtn.TextColor3 = Color3.fromHex("#FFFFFF")
                 actBtn.AutoButtonColor = false
+                actBtn.ZIndex = 5
                 actBtn.Parent = row
 
                 local ac = Instance.new("UICorner")
@@ -1409,6 +1462,13 @@ function TwoKUI:CreateWindow(config)
                 as.Thickness = 1.2
                 as.Parent = actBtn
 
+                local function fireAction()
+                    TweenService:Create(actBtn, TweenInfo.new(0.08), { Size = UDim2.fromOffset(66, 25), BackgroundColor3 = Color3.fromHex("#00E5FF"), TextColor3 = Color3.fromHex("#020617") }):Play()
+                    task.wait(0.08)
+                    TweenService:Create(actBtn, TweenInfo.new(0.12), { Size = UDim2.fromOffset(72, 28), BackgroundColor3 = Color3.fromHex("#0284C7"), TextColor3 = Color3.fromHex("#FFFFFF") }):Play()
+                    task.spawn(callback)
+                end
+
                 actBtn.MouseEnter:Connect(function()
                     TweenService:Create(actBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromHex("#00E5FF") }):Play()
                     TweenService:Create(actBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromHex("#020617") }):Play()
@@ -1418,12 +1478,21 @@ function TwoKUI:CreateWindow(config)
                     TweenService:Create(actBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromHex("#FFFFFF") }):Play()
                 end)
 
-                actBtn.MouseButton1Click:Connect(function()
-                    TweenService:Create(actBtn, TweenInfo.new(0.08), { Size = UDim2.fromOffset(66, 25) }):Play()
-                    task.wait(0.08)
-                    TweenService:Create(actBtn, TweenInfo.new(0.12), { Size = UDim2.fromOffset(72, 28) }):Play()
-                    task.spawn(callback)
+                rowClick.MouseEnter:Connect(function()
+                    TweenService:Create(row, TweenInfo.new(0.15), {
+                        BackgroundColor3 = Color3.fromHex("#0E2342"),
+                        BackgroundTransparency = 0.1
+                    }):Play()
                 end)
+                rowClick.MouseLeave:Connect(function()
+                    TweenService:Create(row, TweenInfo.new(0.15), {
+                        BackgroundColor3 = Color3.fromHex("#08182E"),
+                        BackgroundTransparency = 0.2
+                    }):Play()
+                end)
+
+                rowClick.MouseButton1Click:Connect(fireAction)
+                actBtn.MouseButton1Click:Connect(fireAction)
 
                 return { Button = actBtn, Row = row }
             end
