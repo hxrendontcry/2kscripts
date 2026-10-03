@@ -1270,7 +1270,9 @@ _G.TwoSkiPyramidCleanup = function()
 end
 
 pcall(function()
-    if Window and Window.SelectTab then
+    if TabDashboard and TabDashboard.Select then
+        TabDashboard:Select()
+    elseif Window and Window.SelectTab then
         Window:SelectTab(1)
     end
 end)
