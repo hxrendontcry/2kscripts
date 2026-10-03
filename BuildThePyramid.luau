@@ -499,7 +499,7 @@ local Window = WindUI:CreateWindow({
     Title = "2K SCRIPT",
     SubTitle = "Build the Pyramid! Edition",
     Folder = "2k_build_the_pyramid",
-    Theme = "Amber",
+    Theme = "Sky",
     Transparent = false,
     SideBarWidth = isMobile and 145 or 200,
     HasOutline = true,
@@ -509,22 +509,77 @@ local Window = WindUI:CreateWindow({
     OpenButton = { Enabled = false, Draggable = false, OnlyMobile = false }
 })
 
--- Mobile Floating Toggle Button
+-- ─────────────────────────────────────────────────────────────
+-- CYBER NEON-CYAN ANIMATED LOGO TOGGLE PANEL
+-- ─────────────────────────────────────────────────────────────
 local floatGui = Instance.new("ScreenGui")
 floatGui.Name = "TwoK_Pyramid_Float"
 floatGui.ResetOnSpawn = false
 local parent = getSafeGuiContainer()
 if parent then floatGui.Parent = parent end
 
+-- Outer Aura Ring (Glowing Pulsing Backdrop)
+local auraFrame = Instance.new("Frame")
+auraFrame.Name = "AuraRing"
+auraFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+auraFrame.Size = UDim2.fromOffset(62, 62)
+auraFrame.Position = UDim2.new(0, 46, 0.45, 0)
+auraFrame.BackgroundColor3 = Color3.fromHex("#00E5FF")
+auraFrame.BackgroundTransparency = 0.82
+auraFrame.BorderSizePixel = 0
+auraFrame.Parent = floatGui
+
+local auraCorner = Instance.new("UICorner")
+auraCorner.CornerRadius = UDim.new(0, 20)
+auraCorner.Parent = auraFrame
+
+local auraStroke = Instance.new("UIStroke")
+auraStroke.Color = Color3.fromHex("#00D4FF")
+auraStroke.Thickness = 1.2
+auraStroke.Transparency = 0.65
+auraStroke.Parent = auraFrame
+
+-- Main Logo Panel Container
+local panelFrame = Instance.new("Frame")
+panelFrame.Name = "LogoPanel"
+panelFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+panelFrame.Size = UDim2.fromOffset(52, 52)
+panelFrame.Position = UDim2.new(0, 46, 0.45, 0)
+panelFrame.BackgroundColor3 = Color3.fromHex("#060E18")
+panelFrame.BackgroundTransparency = 0.15
+panelFrame.BorderSizePixel = 0
+panelFrame.Parent = floatGui
+
+local panelCorner = Instance.new("UICorner")
+panelCorner.CornerRadius = UDim.new(0, 16)
+panelCorner.Parent = panelFrame
+
+-- Cyber Neon Border Stroke with Animated Rotating Gradient
+local panelStroke = Instance.new("UIStroke")
+panelStroke.Color = Color3.fromHex("#00E5FF")
+panelStroke.Thickness = 2.2
+panelStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+panelStroke.Parent = panelFrame
+
+local strokeGradient = Instance.new("UIGradient")
+strokeGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0.00, Color3.fromHex("#00E5FF")),
+    ColorSequenceKeypoint.new(0.35, Color3.fromHex("#0077FE")),
+    ColorSequenceKeypoint.new(0.70, Color3.fromHex("#38BDF8")),
+    ColorSequenceKeypoint.new(1.00, Color3.fromHex("#00E5FF"))
+})
+strokeGradient.Parent = panelStroke
+
+-- Interactive Button & Image inside
 local floatBtn = Instance.new("ImageButton")
 floatBtn.Name = "OpenButton"
-floatBtn.Size = UDim2.fromOffset(48, 48)
-floatBtn.Position = UDim2.new(0, 18, 0.45, 0)
-floatBtn.BackgroundColor3 = Color3.fromHex("#FFB700")
-floatBtn.BackgroundTransparency = 0.2
+floatBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+floatBtn.Size = UDim2.fromOffset(40, 40)
+floatBtn.Position = UDim2.fromScale(0.5, 0.5)
+floatBtn.BackgroundTransparency = 1
 floatBtn.Image = "rbxassetid://10723346959"
-floatBtn.ImageColor3 = Color3.new(0, 0, 0)
-floatBtn.Parent = floatGui
+floatBtn.ImageColor3 = Color3.fromHex("#00E5FF")
+floatBtn.Parent = panelFrame
 
 pcall(function()
     if writefile and getcustomasset then
@@ -540,43 +595,55 @@ pcall(function()
         if isfile and isfile("2k_logo.png") then
             floatBtn.Image = getcustomasset("2k_logo.png")
             floatBtn.ImageColor3 = Color3.new(1, 1, 1)
-            floatBtn.BackgroundTransparency = 0.8
         end
     end
 end)
 
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(0, 14)
-btnCorner.Parent = floatBtn
-
-local btnStroke = Instance.new("UIStroke")
-btnStroke.Color = Color3.fromHex("#FFE57F")
-btnStroke.Thickness = 2
-btnStroke.Parent = floatBtn
-
+-- Draggable Logic with Dual Sync (Syncs aura + panel position)
 local dragging, dragInput, dragStart, startPos
-floatBtn.InputBegan:Connect(function(input)
+local function onDragStart(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = floatBtn.Position
+        startPos = panelFrame.Position
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
     end
-end)
+end
 
-floatBtn.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
+panelFrame.InputBegan:Connect(onDragStart)
+floatBtn.InputBegan:Connect(onDragStart)
 
 UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
-        floatBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        panelFrame.Position = newPos
+        auraFrame.Position = newPos
     end
+end)
+
+-- Click & Hover Tween Feedback
+local TweenService = game:GetService("TweenService")
+local tiFast = TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
+floatBtn.MouseEnter:Connect(function()
+    TweenService:Create(panelFrame, tiFast, { Size = UDim2.fromOffset(56, 56) }):Play()
+    TweenService:Create(panelStroke, tiFast, { Thickness = 2.8 }):Play()
+end)
+
+floatBtn.MouseLeave:Connect(function()
+    TweenService:Create(panelFrame, tiFast, { Size = UDim2.fromOffset(52, 52) }):Play()
+    TweenService:Create(panelStroke, tiFast, { Thickness = 2.2 }):Play()
+end)
+
+floatBtn.MouseButton1Down:Connect(function()
+    TweenService:Create(panelFrame, TweenInfo.new(0.08), { Size = UDim2.fromOffset(46, 46) }):Play()
+end)
+
+floatBtn.MouseButton1Up:Connect(function()
+    TweenService:Create(panelFrame, tiFast, { Size = UDim2.fromOffset(52, 52) }):Play()
 end)
 
 floatBtn.MouseButton1Click:Connect(function()
@@ -585,6 +652,25 @@ floatBtn.MouseButton1Click:Connect(function()
             Window:Toggle()
         end
     end)
+end)
+
+-- Continuous Cyber Motion / Breathing Animation Loop
+local animConn = RunService.RenderStepped:Connect(function()
+    if not floatGui or not floatGui.Parent then return end
+    local t = tick()
+    -- Neon rotating gradient border
+    strokeGradient.Rotation = (t * 110) % 360
+    
+    -- Breathing aura scale & pulse
+    local breath = (math.sin(t * 3.2) + 1) * 0.5
+    local auraOffset = 60 + (breath * 10)
+    auraFrame.Size = UDim2.fromOffset(auraOffset, auraOffset)
+    auraFrame.BackgroundTransparency = 0.80 + (breath * 0.12)
+    auraStroke.Transparency = 0.60 + (breath * 0.25)
+    
+    -- Subtle floating hover bounce on the logo inside
+    local bounce = math.sin(t * 2.8) * 1.5
+    floatBtn.Position = UDim2.new(0.5, 0, 0.5, bounce)
 end)
 
 -- ─────────────────────────────────────────────────────────────
@@ -607,7 +693,7 @@ TabDashboard:Section({ Title = "สถิติตัวละครสด (Live
 local statParagraph = TabDashboard:Paragraph({
     Title = "กำลังโหลดข้อมูลตัวละคร...",
     Desc = "รอซิงค์ข้อมูลจากเซิร์ฟเวอร์สักครู่",
-    Icon = "bar-chart-2"
+    Icon = "chart-column"
 })
 
 task.spawn(function()
@@ -729,7 +815,7 @@ TabPyramid:Slider({
     end
 })
 
-TabPyramid:Section({ Title = "ฟังก์ชันเสริม (Auxiliary)", Icon = "sliders" })
+TabPyramid:Section({ Title = "ฟังก์ชันเสริม (Auxiliary)", Icon = "sliders-horizontal" })
 
 TabPyramid:Toggle({
     Title = "ออโต้หยิบหินอย่างเดียว (Auto Pickup Only)",
@@ -937,7 +1023,7 @@ TabUpgrades:Section({ Title = "อัปเกรดอัตโนมัติ 
 
 TabUpgrades:Toggle({
     Title = "ออโต้อัปเกรด Bulk Pickup (หยิบหินทีละเยอะขึ้น)",
-    Icon = "plus-circle",
+    Icon = "circle-plus",
     Value = State.AutoUpgradePickup,
     Callback = function(val) State.AutoUpgradePickup = val end
 })
@@ -1178,7 +1264,7 @@ TabTeleport:Button({
 
 TabTeleport:Button({
     Title = "วาร์ปไป Spawn (จุดเกิด)",
-    Icon = "home",
+    Icon = "house",
     Callback = function() safeTeleport(LOCATIONS.Spawn) end
 })
 
@@ -1190,7 +1276,7 @@ TabTeleport:Button({
 
 TabTeleport:Button({
     Title = "วาร์ปไป Upgrades Area (แท่นซื้ออัปเกรด)",
-    Icon = "arrow-up-circle",
+    Icon = "circle-arrow-up",
     Callback = function() safeTeleport(LOCATIONS.Upgrades) end
 })
 
@@ -1208,8 +1294,8 @@ TabSettings:Section({ Title = "ปรับแต่งธีม UI (Theme Setti
 TabSettings:Dropdown({
     Title = "เลือกสไตล์สี UI (Select Theme)",
     Icon = "paint-bucket",
-    Values = { "Amber", "Dark", "Rose", "Amethyst", "Emerald", "Aqua" },
-    Value = "Amber",
+    Values = { "Sky", "Midnight", "Indigo", "Amber", "Emerald", "Dark", "Rose" },
+    Value = "Sky",
     Callback = function(themeName)
         pcall(function()
             if WindUI and WindUI.SetTheme then
@@ -1253,6 +1339,7 @@ TabSettings:Button({
     Icon = "power",
     Callback = function()
         pcall(function()
+            if animConn then animConn:Disconnect() end
             _G.TwoSkiPyramidRunning = false
             if floatGui then floatGui:Destroy() end
             if Window and Window.Destroy then Window:Destroy() end
@@ -1263,6 +1350,7 @@ TabSettings:Button({
 -- Cleanup Handler
 _G.TwoSkiPyramidCleanup = function()
     pcall(function()
+        if animConn then animConn:Disconnect() end
         _G.TwoSkiPyramidRunning = false
         if floatGui then floatGui:Destroy() end
         if Window and Window.Destroy then Window:Destroy() end
