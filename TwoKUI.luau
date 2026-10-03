@@ -629,7 +629,7 @@ function TwoKUI:CreateWindow(config)
 
         local Tab = {
             Index = tabIndex,
-            Button = tabBtn,
+            TabBtn = tabBtn,
             Container = tabScroll,
             Title = tabTitle
         }
@@ -637,24 +637,34 @@ function TwoKUI:CreateWindow(config)
         function Tab:Select()
             for _, t in ipairs(Window.Tabs) do
                 t.Container.Visible = false
-                TweenService:Create(t.Button, TweenInfo.new(0.2), {
-                    BackgroundColor3 = Color3.fromHex("#081426"),
-                    BackgroundTransparency = 0.5
-                }):Play()
-                t.Button.UIStroke.Transparency = 0.8
-                t.Button.Title.TextColor3 = Color3.fromHex("#94A3B8")
-                t.Button.Icon.ImageColor3 = Color3.fromHex("#94A3B8")
+                pcall(function()
+                    TweenService:Create(t.TabBtn, TweenInfo.new(0.2), {
+                        BackgroundColor3 = Color3.fromHex("#081426"),
+                        BackgroundTransparency = 0.5
+                    }):Play()
+                    local s = t.TabBtn:FindFirstChildWhichIsA("UIStroke")
+                    if s then s.Transparency = 0.8 end
+                    local ttl = t.TabBtn:FindFirstChild("Title")
+                    if ttl then ttl.TextColor3 = Color3.fromHex("#94A3B8") end
+                    local ic = t.TabBtn:FindFirstChild("Icon")
+                    if ic then ic.ImageColor3 = Color3.fromHex("#94A3B8") end
+                end)
             end
             
             tabScroll.Visible = true
-            TweenService:Create(tabBtn, TweenInfo.new(0.2), {
-                BackgroundColor3 = Color3.fromHex("#0284C7"),
-                BackgroundTransparency = 0.15
-            }):Play()
-            tabBtn.UIStroke.Transparency = 0.1
-            tabBtn.UIStroke.Color = Color3.fromHex("#00E5FF")
-            tabBtn.Title.TextColor3 = Color3.fromHex("#FFFFFF")
-            tabBtn.Icon.ImageColor3 = Color3.fromHex("#00FFFF")
+            pcall(function()
+                TweenService:Create(tabBtn, TweenInfo.new(0.2), {
+                    BackgroundColor3 = Color3.fromHex("#0284C7"),
+                    BackgroundTransparency = 0.15
+                }):Play()
+                local s = tabBtn:FindFirstChildWhichIsA("UIStroke")
+                if s then
+                    s.Transparency = 0.1
+                    s.Color = Color3.fromHex("#00E5FF")
+                end
+                tTitle.TextColor3 = Color3.fromHex("#FFFFFF")
+                tIcon.ImageColor3 = Color3.fromHex("#00FFFF")
+            end)
             Window.SelectedTab = Tab
         end
 
