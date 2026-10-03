@@ -127,14 +127,27 @@ local function getServices()
     return nil
 end
 
--- Lazy-load game placement, config & inventory modules
-local RegionRegistry   = (function() local ok, m = pcall(require, ReplicatedStorage:WaitForChild("Shared", 3) and ReplicatedStorage.Shared.RegionRegistry) return ok and m or {} end)()
-local PyramidRuntime   = (function() local ok, m = pcall(require, ReplicatedStorage:WaitForChild("Shared", 3) and ReplicatedStorage.Shared.Placement.PyramidRuntime) return ok and m or {} end)()
-local PyramidConfig    = (function() local ok, m = pcall(require, ReplicatedStorage:WaitForChild("Shared", 3) and ReplicatedStorage.Shared.Config.PyramidConfig) return ok and m or {} end)()
-local CarryState       = (function() local ok, m = pcall(require, ReplicatedStorage:WaitForChild("Shared", 3) and ReplicatedStorage.Shared.Books.CarryState) return ok and m or {} end)()
-local PlacementRange   = (function() local ok, m = pcall(require, ReplicatedStorage:WaitForChild("Shared", 3) and ReplicatedStorage.Shared.Placement.PlacementRange) return ok and m or {} end)()
-local PyramidState     = (function() local ok, m = pcall(require, ReplicatedStorage:WaitForChild("Shared", 3) and ReplicatedStorage.Shared.Placement.PyramidState) return ok and m or {} end)()
-local CompletionConfig = (function() local ok, m = pcall(require, ReplicatedStorage:WaitForChild("Shared", 3) and ReplicatedStorage.Shared.Config.CompletionConfig) return ok and m or {} end)()
+-- Safe Module Require Helper
+local function safeRequire(pathTbl)
+    local cur = ReplicatedStorage
+    for _, name in ipairs(pathTbl) do
+        if not cur or not cur:FindFirstChild(name) then return nil end
+        cur = cur:FindFirstChild(name)
+    end
+    if cur and cur:IsA("ModuleScript") then
+        local ok, mod = pcall(require, cur)
+        if ok then return mod end
+    end
+    return nil
+end
+
+local RegionRegistry   = safeRequire({"Shared", "RegionRegistry"}) or {}
+local PyramidRuntime   = safeRequire({"Shared", "Placement", "PyramidRuntime"}) or {}
+local PyramidConfig    = safeRequire({"Shared", "Config", "PyramidConfig"}) or {}
+local CarryState       = safeRequire({"Shared", "Books", "CarryState"}) or {}
+local PlacementRange   = safeRequire({"Shared", "Placement", "PlacementRange"}) or {}
+local PyramidState     = safeRequire({"Shared", "Placement", "PyramidState"}) or safeRequire({"Shared", "Config", "PyramidRollPolicyConfig"}) or {}
+local CompletionConfig = safeRequire({"Shared", "Config", "PyramidCompletionConfig"}) or safeRequire({"Shared", "Config", "CompletionConfig"}) or {}
 
 -- Knit Remote Function / Remote Event direct reference fallbacks
 local KnitPackages = ReplicatedStorage:FindFirstChild("Packages") and ReplicatedStorage.Packages:FindFirstChild("_Index")
