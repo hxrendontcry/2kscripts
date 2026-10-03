@@ -24,16 +24,17 @@ local TwoKUI = {
     ActiveWindow = nil
 }
 
+local setThreadIdentity = setthreadidentity or setidentity or (syn and syn.set_thread_identity)
+
 -- Safe GUI Container Resolver
 local function getGuiContainer()
+    if setThreadIdentity then pcall(setThreadIdentity, 8) end
     local env = (getgenv and getgenv()) or _G
     if env.gethui then
         local ok, h = pcall(env.gethui)
-        if ok and h and typeof(h) == "Instance" then return h end
+        if ok and h and typeof(h) == "Instance" and h.Name ~= "RobloxGui" then return h end
     end
     if CoreGui then
-        local ok, r = pcall(function() return CoreGui:FindFirstChild("RobloxGui") end)
-        if ok and r then return r end
         return CoreGui
     end
     return LocalPlayer:WaitForChild("PlayerGui", 10)

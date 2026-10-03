@@ -15,6 +15,12 @@ _G.TwoSkiActivePyramidToken = myToken
 _G.TwoSkiPyramidRunning = true
 _G.TwoSkiPyramidLoaded = false
 
+local setThreadIdentity = setthreadidentity or setidentity or (syn and syn.set_thread_identity)
+local function restoreIdentity()
+    if setThreadIdentity then pcall(setThreadIdentity, 8) end
+end
+restoreIdentity()
+
 -- Core Services
 local cloneref = (cloneref or clonereference or function(inst) return inst end)
 local function safeService(name)
@@ -136,6 +142,7 @@ local function safeRequire(pathTbl)
     end
     if cur and cur:IsA("ModuleScript") then
         local ok, mod = pcall(require, cur)
+        restoreIdentity()
         if ok then return mod end
     end
     return nil
@@ -171,12 +178,14 @@ end
 local InteractionRuntime = nil
 local function runtimeInstance()
     local ok, Knit = pcall(require, ReplicatedStorage.Packages.Knit)
+    restoreIdentity()
     if not ok then return nil, nil end
     local okG, ctrl = pcall(Knit.GetController, "InteractionController")
     if not InteractionRuntime then
         pcall(function()
             InteractionRuntime = require(LocalPlayer.PlayerScripts.Utils.Interaction.InteractionRuntime)
         end)
+        restoreIdentity()
     end
     if not okG or type(ctrl) ~= "table" then return nil, InteractionRuntime end
     return ctrl._runtime, InteractionRuntime
