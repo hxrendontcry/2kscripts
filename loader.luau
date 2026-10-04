@@ -180,6 +180,10 @@ local PRESET_GAMES = {
     [123720558354386] = {
         name = "Build the Pyramid! 🏜️",
         scriptUrl = GITHUB_BASE .. "BuildThePyramid.luau"
+    },
+    [122446657157717] = {
+        name = "[🔥NEW SNIPER] Sniper Arena",
+        scriptUrl = GITHUB_BASE .. "TwoK_SniperArena_Hub.luau"
     }
 }
 

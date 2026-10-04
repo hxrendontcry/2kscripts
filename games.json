@@ -25,5 +25,14 @@
     "status": "active",
     "version": "1.0",
     "description": "Auto Quarry Pickup, Auto Build Pyramid, Auto Gym Bench Press, Auto Upgrades & Anti-Fall"
+  },
+  {
+    "id": "sniper-arena",
+    "name": "[🔥NEW SNIPER] Sniper Arena",
+    "placeIds": [122446657157717],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_SniperArena_Hub.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "Silent Aim / Aimbot, Silent Kill, Bullet TP, ESP Full Box/Tracers/Health, Auto Respawn & Anti-Death"
   }
 ]
