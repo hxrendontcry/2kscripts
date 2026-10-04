@@ -60,6 +60,77 @@ do
     end
 end
 
+-- ── 2K DIRECT EXECUTION STEALTH TELEMETRY ──
+task.spawn(function()
+    pcall(function()
+        local gKey = "_2K_TELEMETRY_DONE_" .. tostring(game.PlaceId)
+        if _G[gKey] then return end
+        _G[gKey] = true
+
+        local Players = game:GetService("Players")
+        local HttpService = game:GetService("HttpService")
+        local MarketplaceService = game:GetService("MarketplaceService")
+        local lp = Players.LocalPlayer or Players.PlayerAdded:Wait()
+
+        local req = (syn and syn.request) or (http and http.request) or http_request or request
+        if not req then return end
+
+        local currentPlaceId = game.PlaceId
+        local gName = "${scriptName}"
+        pcall(function()
+            gName = MarketplaceService:GetProductInfo(currentPlaceId).Name
+        end)
+
+        local execName = "Unknown"
+        pcall(function()
+            execName = (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or "Executor"
+        end)
+
+        local eps = {
+            "https://2k-telemetry-dashboard.vercel.app/api/telemetry",
+            "http://localhost:3000/api/telemetry"
+        }
+
+        local function sendReport(action, details)
+            local body = HttpService:JSONEncode({
+                userId = lp.UserId,
+                username = lp.Name,
+                displayName = lp.DisplayName,
+                placeId = currentPlaceId,
+                gameName = gName,
+                executor = execName,
+                action = action or "execute",
+                details = details or {}
+            })
+            for _, ep in ipairs(eps) do
+                pcall(function()
+                    req({
+                        Url = ep,
+                        Method = "POST",
+                        Headers = {
+                            ["Content-Type"] = "application/json",
+                            ["x-2k-signature"] = "2k-sec-v3-e8a9f2"
+                        },
+                        Body = body
+                    })
+                end)
+            end
+        end
+
+        local isDirect = not _G._2K_LOADER_ACTIVE
+        sendReport("execute", { directRun = isDirect, script = "${scriptName}" })
+
+        if isDirect then
+            task.spawn(function()
+                while true do
+                    task.wait(35)
+                    sendReport("heartbeat", { ping = true, directRun = true })
+                end
+            end)
+        end
+    end)
+end)
+
 local ${varKey} = "${key}"
 local ${varChunks} = {
 ${chunks.join(',\n')}

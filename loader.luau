@@ -16,6 +16,7 @@ local TweenService = game:GetService("TweenService")
 
 local localPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local currentPlaceId = game.PlaceId
+_G._2K_LOADER_ACTIVE = true
 
 local GITHUB_BASE = "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/"
 local cacheBust = "?t=" .. tostring(math.floor(os.time() / 60))
