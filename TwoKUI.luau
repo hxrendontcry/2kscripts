@@ -1239,18 +1239,26 @@ function TwoKUI:CreateWindow(config)
                 }
             end
 
-            -- 3. DROPDOWN (Sleek Accordion Tray - 100% immune to overlap)
+            -- 3. DROPDOWN (Sleek Accordion Tray - Supports Single & Multi Selection)
             function Section:Dropdown(cfg)
                 cfg = cfg or {}
                 local title = cfg.Title or "Dropdown"
                 local desc = cfg.Desc or ""
                 local icon = cfg.Icon or "chevron-up"
                 local values = cfg.Values or {}
-                local curVal = cfg.Value or values[1] or ""
+                local isMulti = cfg.Multi or cfg.MultiSelect or false
+                local curVal = cfg.Value
+                if isMulti then
+                    if type(curVal) ~= "table" then
+                        curVal = {}
+                    end
+                else
+                    curVal = curVal or values[1] or ""
+                end
                 local callback = cfg.Callback or function() end
 
                 local closedHeight = 52
-                local maxVisibleItems = 5
+                local maxVisibleItems = 6
                 local itemHeight = 30
                 local trayHeight = math.clamp(#values * (itemHeight + 4), 34, maxVisibleItems * (itemHeight + 4))
                 local openHeight = closedHeight + trayHeight + 16
@@ -1273,8 +1281,8 @@ function TwoKUI:CreateWindow(config)
 
                 local dropBtn = Instance.new("TextButton")
                 dropBtn.Name = "SelectorBadge"
-                dropBtn.Size = UDim2.fromOffset(145, 30)
-                dropBtn.Position = UDim2.new(1, -155, 0.5, -15)
+                dropBtn.Size = UDim2.fromOffset(150, 30)
+                dropBtn.Position = UDim2.new(1, -160, 0.5, -15)
                 dropBtn.BackgroundColor3 = Color3.fromHex("#081A33")
                 dropBtn.BackgroundTransparency = 0.2
                 dropBtn.Text = ""
@@ -1291,8 +1299,29 @@ function TwoKUI:CreateWindow(config)
                 ds.Transparency = 0.6
                 ds.Parent = dropBtn
 
+                local function getDisplayText()
+                    if not isMulti then return tostring(curVal) end
+                    local count = 0
+                    local selList = {}
+                    for _, opt in ipairs(values) do
+                        if curVal[opt] == true then
+                            count = count + 1
+                            table.insert(selList, opt)
+                        end
+                    end
+                    if count == 0 then
+                        return "None Selected"
+                    elseif count == 1 then
+                        return selList[1]
+                    elseif count == 2 then
+                        return selList[1] .. ", " .. selList[2]
+                    else
+                        return tostring(count) .. " Selected"
+                    end
+                end
+
                 local lbl = Instance.new("TextLabel")
-                lbl.Text = tostring(curVal)
+                lbl.Text = getDisplayText()
                 lbl.Font = Enum.Font.GothamMedium
                 lbl.TextSize = 11
                 lbl.TextColor3 = Color3.fromHex("#F1F5F9")
@@ -1347,10 +1376,17 @@ function TwoKUI:CreateWindow(config)
                 local optionButtons = {}
                 local function updateSelectionHighlight()
                     for _, item in ipairs(optionButtons) do
-                        local isSel = (item.Value == curVal)
+                        local isSel = false
+                        if isMulti then
+                            isSel = (curVal[item.Value] == true)
+                        else
+                            isSel = (item.Value == curVal)
+                        end
+
                         item.Btn.BackgroundColor3 = isSel and Color3.fromHex("#0284C7") or Color3.fromHex("#061528")
                         item.Btn.BackgroundTransparency = isSel and 0.15 or 0.4
                         item.Btn.TextColor3 = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#CBD5E1")
+                        item.Btn.Text = (isSel and " ✓  " or "    ") .. tostring(item.Value)
                         local s = item.Btn:FindFirstChildWhichIsA("UIStroke")
                         if s then
                             s.Color = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#00E5FF")
@@ -1394,12 +1430,18 @@ function TwoKUI:CreateWindow(config)
                     end
 
                     for _, opt in ipairs(values) do
-                        local isSel = (opt == curVal)
+                        local isSel = false
+                        if isMulti then
+                            isSel = (curVal[opt] == true)
+                        else
+                            isSel = (opt == curVal)
+                        end
+
                         local optBtn = Instance.new("TextButton")
                         optBtn.Size = UDim2.new(1, -4, 0, itemHeight)
                         optBtn.BackgroundColor3 = isSel and Color3.fromHex("#0284C7") or Color3.fromHex("#061528")
                         optBtn.BackgroundTransparency = isSel and 0.15 or 0.4
-                        optBtn.Text = "  " .. tostring(opt)
+                        optBtn.Text = (isSel and " ✓  " or "    ") .. tostring(opt)
                         optBtn.Font = Enum.Font.GothamMedium
                         optBtn.TextSize = 12
                         optBtn.TextColor3 = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#CBD5E1")
@@ -1420,7 +1462,8 @@ function TwoKUI:CreateWindow(config)
                         table.insert(optionButtons, { Btn = optBtn, Value = opt })
 
                         optBtn.MouseEnter:Connect(function()
-                            if opt ~= curVal then
+                            local currentlySel = isMulti and (curVal[opt] == true) or (opt == curVal)
+                            if not currentlySel then
                                 TweenService:Create(optBtn, TweenInfo.new(0.15), {
                                     BackgroundColor3 = Color3.fromHex("#0D2545"),
                                     TextColor3 = Color3.fromHex("#FFFFFF")
@@ -1429,7 +1472,8 @@ function TwoKUI:CreateWindow(config)
                         end)
 
                         optBtn.MouseLeave:Connect(function()
-                            if opt ~= curVal then
+                            local currentlySel = isMulti and (curVal[opt] == true) or (opt == curVal)
+                            if not currentlySel then
                                 TweenService:Create(optBtn, TweenInfo.new(0.15), {
                                     BackgroundColor3 = Color3.fromHex("#061528"),
                                     TextColor3 = Color3.fromHex("#CBD5E1")
@@ -1438,11 +1482,18 @@ function TwoKUI:CreateWindow(config)
                         end)
 
                         optBtn.MouseButton1Click:Connect(function()
-                            curVal = opt
-                            lbl.Text = tostring(curVal)
-                            updateSelectionHighlight()
-                            toggleMenu()
-                            task.spawn(callback, curVal)
+                            if isMulti then
+                                curVal[opt] = not curVal[opt]
+                                lbl.Text = getDisplayText()
+                                updateSelectionHighlight()
+                                task.spawn(callback, curVal)
+                            else
+                                curVal = opt
+                                lbl.Text = tostring(curVal)
+                                updateSelectionHighlight()
+                                toggleMenu()
+                                task.spawn(callback, curVal)
+                            end
                         end)
                     end
                 end
@@ -1451,8 +1502,15 @@ function TwoKUI:CreateWindow(config)
 
                 return {
                     SetValue = function(v)
-                        curVal = v
-                        lbl.Text = tostring(v)
+                        if isMulti then
+                            if type(v) == "table" then
+                                curVal = v
+                            end
+                            lbl.Text = getDisplayText()
+                        else
+                            curVal = v
+                            lbl.Text = tostring(v)
+                        end
                         updateSelectionHighlight()
                         task.spawn(callback, curVal)
                     end,
