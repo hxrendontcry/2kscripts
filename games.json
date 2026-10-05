@@ -29,7 +29,12 @@
   {
     "id": "sniper-arena",
     "name": "[🔥NEW SNIPER] Sniper Arena",
-    "placeIds": [122446657157717],
+    "universeIds": [9534705677],
+    "placeIds": [
+      122446657157717,
+      119259569670784,
+      126042865144779
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_SniperArena_Hub.luau",
     "status": "active",
     "version": "1.0",

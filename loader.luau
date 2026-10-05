@@ -185,11 +185,47 @@ local PRESET_GAMES = {
         name = "[🔥NEW SNIPER] Sniper Arena",
         scriptUrl = GITHUB_BASE .. "TwoK_SniperArena_Hub.luau"
     },
+    [119259569670784] = {
+        name = "[🔥NEW SNIPER] Sniper Arena ([Arcade][Beginner])",
+        scriptUrl = GITHUB_BASE .. "TwoK_SniperArena_Hub.luau"
+    },
+    [126042865144779] = {
+        name = "[🔥NEW SNIPER] Sniper Arena ([Arcade])",
+        scriptUrl = GITHUB_BASE .. "TwoK_SniperArena_Hub.luau"
+    },
     [113290951185459] = {
         name = "Anime Dice 🎲",
         scriptUrl = GITHUB_BASE .. "AnimeDice.luau"
     },
     [90920025162454] = {
+        name = "[ISLANDS] Roll a Fisherman 🎣",
+        scriptUrl = GITHUB_BASE .. "TwoK_RollAFisherman_Hub.luau"
+    }
+}
+
+-- ── UNIVERSE-WIDE ROUTING (Supports all sub-places, arenas, dungeons automatically) ──
+local PRESET_UNIVERSES = {
+    [9534705677] = {
+        name = "[🔥NEW SNIPER] Sniper Arena",
+        scriptUrl = GITHUB_BASE .. "TwoK_SniperArena_Hub.luau"
+    },
+    [10684750879] = {
+        name = "+1 ของรางวัลที่จะหลอม (Loot to Forge)",
+        scriptUrl = GITHUB_BASE .. "LootToForge.luau"
+    },
+    [10765091041] = {
+        name = "Open Sea For Animals!",
+        scriptUrl = GITHUB_BASE .. "OpenSeaHub.luau"
+    },
+    [10765012427] = {
+        name = "Build the Pyramid! 🏜️",
+        scriptUrl = GITHUB_BASE .. "BuildThePyramid.luau"
+    },
+    [10708913337] = {
+        name = "Anime Dice 🎲",
+        scriptUrl = GITHUB_BASE .. "AnimeDice.luau"
+    },
+    [10636331438] = {
         name = "[ISLANDS] Roll a Fisherman 🎣",
         scriptUrl = GITHUB_BASE .. "TwoK_RollAFisherman_Hub.luau"
     }
@@ -238,7 +274,8 @@ local function executeTargetScript(scriptUrl, gameTitle)
 end
 
 -- ── 5. ROUTING LOGIC ──────────────────────────────────────────────────────
-local matchedGame = PRESET_GAMES[tonumber(currentPlaceId)]
+local currentUniverseId = game.GameId
+local matchedGame = PRESET_GAMES[tonumber(currentPlaceId)] or PRESET_UNIVERSES[tonumber(currentUniverseId)]
 
 if matchedGame then
     executeTargetScript(matchedGame.scriptUrl, matchedGame.name)
@@ -252,6 +289,14 @@ else
                 if g.placeIds and type(g.placeIds) == "table" then
                     for _, pid in ipairs(g.placeIds) do
                         if tonumber(pid) == tonumber(currentPlaceId) then
+                            matchedGame = g
+                            break
+                        end
+                    end
+                end
+                if not matchedGame and g.universeIds and type(g.universeIds) == "table" then
+                    for _, uid in ipairs(g.universeIds) do
+                        if tonumber(uid) == tonumber(currentUniverseId) then
                             matchedGame = g
                             break
                         end
@@ -275,7 +320,7 @@ else
         local gName = "Roblox Experience"
         pcall(function() gName = MarketplaceService:GetProductInfo(currentPlaceId).Name end)
         updateLoaderText("2K SCRIPT — ยังไม่รองรับแมพนี้")
-        sendTelemetry("unsupported", { name = gName, placeId = currentPlaceId })
+        sendTelemetry("unsupported", { name = gName, placeId = currentPlaceId, universeId = currentUniverseId })
         notify("2K Script Hub", "แมพนี้ยังไม่รองรับ (" .. gName .. ")\nPlaceId: " .. tostring(currentPlaceId), 6)
         task.delay(2, dismissLoader)
     end
