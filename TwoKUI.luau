@@ -591,6 +591,14 @@ function TwoKUI:CreateWindow(config)
         end
     end
 
+    function Window:Open()
+        if not self.IsOpen then self:Toggle() end
+    end
+
+    function Window:Close()
+        if self.IsOpen then self:Toggle() end
+    end
+
     function Window:Destroy()
         pcall(function() screenGui:Destroy() end)
     end
