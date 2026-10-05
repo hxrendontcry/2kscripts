@@ -184,6 +184,10 @@ local PRESET_GAMES = {
     [122446657157717] = {
         name = "[🔥NEW SNIPER] Sniper Arena",
         scriptUrl = GITHUB_BASE .. "TwoK_SniperArena_Hub.luau"
+    },
+    [113290951185459] = {
+        name = "Anime Dice 🎲",
+        scriptUrl = GITHUB_BASE .. "AnimeDice.luau"
     }
 }
 

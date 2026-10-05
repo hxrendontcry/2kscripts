@@ -247,7 +247,8 @@ function build() {
         { src: 'LootToForge.luau', dest: 'LootToForge.luau', name: '2K_LootToForge' },
         { src: 'OpenSeaHub.luau', dest: 'OpenSeaHub.luau', name: '2K_OpenSeaHub' },
         { src: 'BuildThePyramid.luau', dest: 'BuildThePyramid.luau', name: '2K_BuildThePyramid' },
-        { src: 'TwoK_SniperArena_Hub.luau', dest: 'TwoK_SniperArena_Hub.luau', name: '2K_SniperArena' }
+        { src: 'TwoK_SniperArena_Hub.luau', dest: 'TwoK_SniperArena_Hub.luau', name: '2K_SniperArena' },
+        { src: 'AnimeDice.luau', dest: 'AnimeDice.luau', name: '2K_AnimeDice' }
     ];
 
     console.log('=== 2K SCRIPT INDUSTRIAL OBFUSCATION BUILD ===');

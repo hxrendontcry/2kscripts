@@ -1379,58 +1379,75 @@ function TwoKUI:CreateWindow(config)
                 header.MouseButton1Click:Connect(toggleMenu)
                 dropBtn.MouseButton1Click:Connect(toggleMenu)
 
-                for _, opt in ipairs(values) do
-                    local isSel = (opt == curVal)
-                    local optBtn = Instance.new("TextButton")
-                    optBtn.Size = UDim2.new(1, -4, 0, itemHeight)
-                    optBtn.BackgroundColor3 = isSel and Color3.fromHex("#0284C7") or Color3.fromHex("#061528")
-                    optBtn.BackgroundTransparency = isSel and 0.15 or 0.4
-                    optBtn.Text = "  " .. tostring(opt)
-                    optBtn.Font = Enum.Font.GothamMedium
-                    optBtn.TextSize = 12
-                    optBtn.TextColor3 = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#CBD5E1")
-                    optBtn.TextXAlignment = Enum.TextXAlignment.Left
-                    optBtn.AutoButtonColor = false
-                    optBtn.Parent = tray
+                local function renderOptions(newValues)
+                    values = newValues or {}
+                    for _, item in ipairs(optionButtons) do
+                        pcall(function() item.Btn:Destroy() end)
+                    end
+                    table.clear(optionButtons)
 
-                    local oc = Instance.new("UICorner")
-                    oc.CornerRadius = UDim.new(0, 6)
-                    oc.Parent = optBtn
+                    trayHeight = math.clamp(#values * (itemHeight + 4), 34, maxVisibleItems * (itemHeight + 4))
+                    openHeight = closedHeight + trayHeight + 16
+                    tray.Size = UDim2.new(1, -20, 0, trayHeight)
+                    if isOpen then
+                        row.Size = UDim2.new(1, 0, 0, openHeight)
+                    end
 
-                    local os = Instance.new("UIStroke")
-                    os.Color = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#00E5FF")
-                    os.Thickness = 1
-                    os.Transparency = isSel and 0.3 or 0.85
-                    os.Parent = optBtn
+                    for _, opt in ipairs(values) do
+                        local isSel = (opt == curVal)
+                        local optBtn = Instance.new("TextButton")
+                        optBtn.Size = UDim2.new(1, -4, 0, itemHeight)
+                        optBtn.BackgroundColor3 = isSel and Color3.fromHex("#0284C7") or Color3.fromHex("#061528")
+                        optBtn.BackgroundTransparency = isSel and 0.15 or 0.4
+                        optBtn.Text = "  " .. tostring(opt)
+                        optBtn.Font = Enum.Font.GothamMedium
+                        optBtn.TextSize = 12
+                        optBtn.TextColor3 = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#CBD5E1")
+                        optBtn.TextXAlignment = Enum.TextXAlignment.Left
+                        optBtn.AutoButtonColor = false
+                        optBtn.Parent = tray
 
-                    table.insert(optionButtons, { Btn = optBtn, Value = opt })
+                        local oc = Instance.new("UICorner")
+                        oc.CornerRadius = UDim.new(0, 6)
+                        oc.Parent = optBtn
 
-                    optBtn.MouseEnter:Connect(function()
-                        if opt ~= curVal then
-                            TweenService:Create(optBtn, TweenInfo.new(0.15), {
-                                BackgroundColor3 = Color3.fromHex("#0D2545"),
-                                TextColor3 = Color3.fromHex("#FFFFFF")
-                            }):Play()
-                        end
-                    end)
+                        local os = Instance.new("UIStroke")
+                        os.Color = isSel and Color3.fromHex("#00FFFF") or Color3.fromHex("#00E5FF")
+                        os.Thickness = 1
+                        os.Transparency = isSel and 0.3 or 0.85
+                        os.Parent = optBtn
 
-                    optBtn.MouseLeave:Connect(function()
-                        if opt ~= curVal then
-                            TweenService:Create(optBtn, TweenInfo.new(0.15), {
-                                BackgroundColor3 = Color3.fromHex("#061528"),
-                                TextColor3 = Color3.fromHex("#CBD5E1")
-                            }):Play()
-                        end
-                    end)
+                        table.insert(optionButtons, { Btn = optBtn, Value = opt })
 
-                    optBtn.MouseButton1Click:Connect(function()
-                        curVal = opt
-                        lbl.Text = tostring(curVal)
-                        updateSelectionHighlight()
-                        toggleMenu()
-                        task.spawn(callback, curVal)
-                    end)
+                        optBtn.MouseEnter:Connect(function()
+                            if opt ~= curVal then
+                                TweenService:Create(optBtn, TweenInfo.new(0.15), {
+                                    BackgroundColor3 = Color3.fromHex("#0D2545"),
+                                    TextColor3 = Color3.fromHex("#FFFFFF")
+                                }):Play()
+                            end
+                        end)
+
+                        optBtn.MouseLeave:Connect(function()
+                            if opt ~= curVal then
+                                TweenService:Create(optBtn, TweenInfo.new(0.15), {
+                                    BackgroundColor3 = Color3.fromHex("#061528"),
+                                    TextColor3 = Color3.fromHex("#CBD5E1")
+                                }):Play()
+                            end
+                        end)
+
+                        optBtn.MouseButton1Click:Connect(function()
+                            curVal = opt
+                            lbl.Text = tostring(curVal)
+                            updateSelectionHighlight()
+                            toggleMenu()
+                            task.spawn(callback, curVal)
+                        end)
+                    end
                 end
+
+                renderOptions(values)
 
                 return {
                     SetValue = function(v)
@@ -1438,7 +1455,10 @@ function TwoKUI:CreateWindow(config)
                         lbl.Text = tostring(v)
                         updateSelectionHighlight()
                         task.spawn(callback, curVal)
-                    end
+                    end,
+                    SetValues = renderOptions,
+                    GetValue = function() return curVal end,
+                    Row = row
                 }
             end
 

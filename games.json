@@ -34,5 +34,14 @@
     "status": "active",
     "version": "1.0",
     "description": "Silent Aim / Aimbot, Silent Kill, Bullet TP, ESP Full Box/Tracers/Health, Auto Respawn & Anti-Death"
+  },
+  {
+    "id": "anime-dice",
+    "name": "Anime Dice 🎲",
+    "placeIds": [113290951185459],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/AnimeDice.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "Auto Roll, Auto Collect Plot, Auto Equip Best, Auto Level Slots & Upgrades, Live Status HUD"
   }
 ]
