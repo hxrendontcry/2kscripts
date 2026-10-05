@@ -43,5 +43,14 @@
     "status": "active",
     "version": "1.0",
     "description": "Auto Roll, Auto Collect Plot, Auto Equip Best, Auto Level Slots & Upgrades, Live Status HUD"
+  },
+  {
+    "id": "roll-a-fisherman",
+    "name": "[ISLANDS] Roll a Fisherman 🎣",
+    "placeIds": [90920025162454],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_RollAFisherman_Hub.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "Auto Collect, Auto Vacuum Money, Auto Sell & Unfavorite Fish, Plot Management & Live Status HUD"
   }
 ]

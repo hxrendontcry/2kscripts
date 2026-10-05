@@ -178,7 +178,9 @@ local function ${varDec}()
             part[j] = s_char(orig_byte)
             global_idx = global_idx + 1
         end
+        if table.clear then pcall(table.clear, chunk) end
         result_parts[c_idx] = t_concat(part)
+        if table.clear then pcall(table.clear, part) end
     end
 
     return t_concat(result_parts)
@@ -186,22 +188,31 @@ end
 
 local ${varRun} = (loadstring or load)
 
--- Anti-Hooking & Auto-Restoration
+-- Anti-Hooking & Auto-Restoration Engine
+local _isHooked = false
 if isfunctionhooked and isfunctionhooked(${varRun}) then
-    if restorefunction then
-        pcall(restorefunction, ${varRun})
-    end
+    _isHooked = true
+    if restorefunction then pcall(restorefunction, ${varRun}) end
+end
+
+if iscclosure and not iscclosure(${varRun}) then
+    _isHooked = true
+    if restorefunction then pcall(restorefunction, ${varRun}) end
 end
 
 if debug and debug.info then
     local ok_info, src_info = pcall(debug.info, ${varRun}, "s")
     if ok_info and type(src_info) == "string" and src_info ~= "[C]" and src_info ~= "=[C]" and src_info ~= "" and not string.find(src_info, "loadstring") then
-        pcall(function()
-            local p = game:GetService("Players").LocalPlayer
-            if p and p.Kick then p:Kick("[2K Security] Interception attempt detected.") end
-        end)
-        return
+        _isHooked = true
     end
+end
+
+if _isHooked and (iscclosure and not iscclosure(${varRun})) then
+    pcall(function()
+        local p = game:GetService("Players").LocalPlayer
+        if p and p.Kick then p:Kick("[2K Security] Environment hook violation detected.") end
+    end)
+    return
 end
 
 local ${varBuf} = ${varDec}()
@@ -216,6 +227,9 @@ local _compiled, _cErr = ${varRun}(${varBuf}, "=${scriptName}")
 
 -- In-Memory GC Scrubbing (Purge all traces from heap memory)
 ${varBuf} = nil
+if table.clear then
+    pcall(table.clear, ${varChunks})
+end
 ${varChunks} = nil
 ${varKey} = nil
 ${varDec} = nil
@@ -248,7 +262,8 @@ function build() {
         { src: 'OpenSeaHub.luau', dest: 'OpenSeaHub.luau', name: '2K_OpenSeaHub' },
         { src: 'BuildThePyramid.luau', dest: 'BuildThePyramid.luau', name: '2K_BuildThePyramid' },
         { src: 'TwoK_SniperArena_Hub.luau', dest: 'TwoK_SniperArena_Hub.luau', name: '2K_SniperArena' },
-        { src: 'AnimeDice.luau', dest: 'AnimeDice.luau', name: '2K_AnimeDice' }
+        { src: 'AnimeDice.luau', dest: 'AnimeDice.luau', name: '2K_AnimeDice' },
+        { src: 'TwoK_RollAFisherman_Hub.luau', dest: 'TwoK_RollAFisherman_Hub.luau', name: '2K_RollAFisherman' }
     ];
 
     console.log('=== 2K SCRIPT INDUSTRIAL OBFUSCATION BUILD ===');

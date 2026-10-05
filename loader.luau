@@ -188,6 +188,10 @@ local PRESET_GAMES = {
     [113290951185459] = {
         name = "Anime Dice 🎲",
         scriptUrl = GITHUB_BASE .. "AnimeDice.luau"
+    },
+    [90920025162454] = {
+        name = "[ISLANDS] Roll a Fisherman 🎣",
+        scriptUrl = GITHUB_BASE .. "TwoK_RollAFisherman_Hub.luau"
     }
 }
 
