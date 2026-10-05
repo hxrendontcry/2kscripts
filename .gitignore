@@ -1,4 +1,7 @@
 # Keep raw source code confidential on local machine
 src/
+tools/
+*.cjs
 *.bak
 *.tmp
+node_modules/
