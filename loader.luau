@@ -19,7 +19,7 @@ local currentPlaceId = game.PlaceId
 _G._2K_LOADER_ACTIVE = true
 
 local GITHUB_BASE = "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/"
-local cacheBust = "?t=" .. tostring(math.floor(os.time() / 60))
+local cacheBust = "?t=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
 
 -- ── 1. INSTANT VISUAL FEEDBACK (HUD แสดงทันทีใน 0.01 วินาที) ───────────────
 local loaderGui = nil
