@@ -197,6 +197,36 @@ function TwoKUI:CreateWindow(config)
     mainFrame.ClipsDescendants = true
     mainFrame.Parent = screenGui
 
+    -- ── Adaptive Responsive Scaling for Mobile (Delta, Android, iOS, Tablets) ──
+    local windowScale = Instance.new("UIScale")
+    windowScale.Name = "WindowScale"
+    windowScale.Parent = mainFrame
+
+    local function updateAdaptiveScale()
+        local vp = Camera and Camera.ViewportSize or Vector2.new(1920, 1080)
+        local screenW = vp.X
+        local screenH = vp.Y
+        
+        local baseW = 880
+        local baseH = 520
+        
+        if isMobile or screenW < 960 or screenH < 580 then
+            -- Leave generous margin for Roblox top bar, notch, and thumb controls
+            local availW = math.max(screenW - 40, 300)
+            local availH = math.max(screenH - 46, 250)
+            local scaleRatio = math.min(availW / baseW, availH / baseH)
+            -- Scale down dynamically so it NEVER fills 100% of the screen or clips off-screen!
+            windowScale.Scale = math.clamp(scaleRatio * 0.94, 0.45, 0.82)
+        else
+            windowScale.Scale = 1.0
+        end
+    end
+
+    updateAdaptiveScale()
+    if Camera then
+        Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateAdaptiveScale)
+    end
+
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 20)
     mainCorner.Parent = mainFrame
@@ -417,25 +447,60 @@ function TwoKUI:CreateWindow(config)
     local btnMax = makeControlBtn("□", 34)
     local btnClose = makeControlBtn("✕", 68)
 
-    -- Draggable Logic for Topbar
-    local dragging, dragStart, startPos
-    topbar.InputBegan:Connect(function(input)
+    -- ── Rock-Solid Draggable Logic (Desktop Mouse + Mobile Touch + Delta compatible) ──
+    local dragging = false
+    local dragStart = Vector2.zero
+    local startPos = mainFrame.Position
+
+    local function onDragStart(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            dragStart = input.Position
+            dragStart = Vector2.new(input.Position.X, input.Position.Y)
             startPos = mainFrame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
         end
-    end)
+    end
+
+    topbar.InputBegan:Connect(onDragStart)
+    brandContainer.InputBegan:Connect(onDragStart)
+
+    -- Make child labels non-active so touches pass cleanly to topbar
+    brandContainer.Active = false
+    titleLbl.Active = false
+    subTitleLbl.Active = false
+    perfLbl.Active = false
+    topbarLine.Active = false
 
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            local current = Vector2.new(input.Position.X, input.Position.Y)
+            local delta = current - dragStart
+            local curScale = (windowScale and windowScale.Scale) or 1.0
+            
+            -- Compensate for UIScale so window tracks finger 1:1 on mobile without lagging or jumping
+            local scaledDeltaX = delta.X / curScale
+            local scaledDeltaY = delta.Y / curScale
+            
+            mainFrame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + scaledDeltaX,
+                startPos.Y.Scale,
+                startPos.Y.Offset + scaledDeltaY
+            )
         end
     end)
+
+    local function onDragEnd(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end
+
+    UserInputService.InputEnded:Connect(onDragEnd)
+    if UserInputService.TouchEnded then
+        UserInputService.TouchEnded:Connect(function()
+            dragging = false
+        end)
+    end
 
     -- ─────────────────────────────────────────────────────────
     -- LEFT SIDEBAR (Tabs + User Profile Badge)
@@ -606,19 +671,19 @@ function TwoKUI:CreateWindow(config)
     btnMin.MouseButton1Click:Connect(function() Window:Toggle() end)
     btnClose.MouseButton1Click:Connect(function() Window:Toggle() end)
 
-    -- Fullscreen Toggle
+    -- Fullscreen / Fit Toggle
     local isMax = false
     local originalSize = Size
     local function toggleMax()
         isMax = not isMax
         if isMax then
+            TweenService:Create(windowScale, TweenInfo.new(0.25), { Scale = 1.0 }):Play()
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Size = UDim2.new(0.96, 0, 0.94, 0),
                 Position = UDim2.new(0.5, 0, 0.5, 0)
             }):Play()
         else
+            updateAdaptiveScale()
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
-                Size = originalSize,
                 Position = UDim2.new(0.5, 0, 0.5, 0)
             }):Play()
         end
@@ -680,33 +745,47 @@ function TwoKUI:CreateWindow(config)
                 ImageColor3 = Color3.fromHex("#00FFFF"),
                 ImageTransparency = 0.0
             }):Play()
-
-            local conn
-            conn = input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    isResizing = false
-                    TweenService:Create(gripVisual, TweenInfo.new(0.2), {
-                        ImageColor3 = Color3.fromHex("#00E5FF"),
-                        ImageTransparency = 0.4
-                    }):Play()
-                    if conn then conn:Disconnect() end
-                end
-            end)
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
         if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local deltaX = input.Position.X - resizeStartMouse.X
-            local deltaY = input.Position.Y - resizeStartMouse.Y
+            local current = Vector2.new(input.Position.X, input.Position.Y)
+            local delta = current - resizeStartMouse
+            local curScale = (windowScale and windowScale.Scale) or 1.0
 
-            local newW = math.clamp(resizeStartSize.X + deltaX, 620, 1400)
-            local newH = math.clamp(resizeStartSize.Y + deltaY, 390, 900)
+            local newW = math.clamp(resizeStartSize.X + (delta.X / curScale), 540, 1400)
+            local newH = math.clamp(resizeStartSize.Y + (delta.Y / curScale), 350, 900)
 
             mainFrame.Size = UDim2.fromOffset(newW, newH)
             originalSize = mainFrame.Size
         end
     end)
+
+    local function onResizeEnd(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            if isResizing then
+                isResizing = false
+                TweenService:Create(gripVisual, TweenInfo.new(0.2), {
+                    ImageColor3 = Color3.fromHex("#00E5FF"),
+                    ImageTransparency = 0.4
+                }):Play()
+            end
+        end
+    end
+
+    UserInputService.InputEnded:Connect(onResizeEnd)
+    if UserInputService.TouchEnded then
+        UserInputService.TouchEnded:Connect(function()
+            if isResizing then
+                isResizing = false
+                TweenService:Create(gripVisual, TweenInfo.new(0.2), {
+                    ImageColor3 = Color3.fromHex("#00E5FF"),
+                    ImageTransparency = 0.4
+                }):Play()
+            end
+        end)
+    end
 
     -- ─────────────────────────────────────────────────────────
     -- TAB BUILDER
