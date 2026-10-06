@@ -1089,8 +1089,12 @@ function TwoKUI:CreateWindow(config)
                 knobCorner.CornerRadius = UDim.new(1, 0)
                 knobCorner.Parent = knob
 
-                local function updateToggle(newVal)
-                    val = newVal
+                local function updateToggle(selfOrVal, maybeVal)
+                    local newVal = selfOrVal
+                    if (type(selfOrVal) == "table" and (selfOrVal.Row ~= nil or selfOrVal.SetValue ~= nil)) or maybeVal ~= nil then
+                        newVal = maybeVal
+                    end
+                    val = (newVal == true)
                     local targetColor = val and Color3.fromHex("#00E5FF") or Color3.fromHex("#1E293B")
                     local targetPos = val and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
                     TweenService:Create(pill, TweenInfo.new(0.2, Enum.EasingStyle.Quart), { BackgroundColor3 = targetColor }):Play()
@@ -1236,7 +1240,12 @@ function TwoKUI:CreateWindow(config)
                 end)
 
                 return {
-                    SetValue = function(v)
+                    SetValue = function(selfOrVal, maybeVal)
+                        local v = selfOrVal
+                        if (type(selfOrVal) == "table" and (selfOrVal.Row ~= nil or selfOrVal.SetValue ~= nil)) or maybeVal ~= nil then
+                            v = maybeVal
+                        end
+                        if type(v) ~= "number" then return end
                         curVal = math.clamp(v, minVal, maxVal)
                         local alpha = (curVal - minVal) / (maxVal - minVal)
                         numBadge.Text = tostring(curVal)
@@ -1509,15 +1518,26 @@ function TwoKUI:CreateWindow(config)
                 renderOptions(values)
 
                 return {
-                    SetValue = function(v)
+                    SetValue = function(selfOrVal, maybeVal)
+                        local v = selfOrVal
+                        if (type(selfOrVal) == "table" and (selfOrVal.Row ~= nil or selfOrVal.SetValues ~= nil)) or maybeVal ~= nil then
+                            v = maybeVal
+                        end
                         if isMulti then
                             if type(v) == "table" then
-                                curVal = v
+                                curVal = {}
+                                for k, val in pairs(v) do
+                                    if type(val) == "boolean" then
+                                        curVal[k] = val
+                                    end
+                                end
                             end
                             lbl.Text = getDisplayText()
                         else
-                            curVal = v
-                            lbl.Text = tostring(v)
+                            if v ~= nil then
+                                curVal = tostring(v)
+                                lbl.Text = tostring(v)
+                            end
                         end
                         updateSelectionHighlight()
                         task.spawn(callback, curVal)
@@ -1709,7 +1729,13 @@ function TwoKUI:CreateWindow(config)
 
                 return {
                     GetValue = function() return tBox.Text end,
-                    SetValue = function(v) tBox.Text = tostring(v) end,
+                    SetValue = function(selfOrVal, maybeVal)
+                        local v = selfOrVal
+                        if (type(selfOrVal) == "table" and (selfOrVal.Row ~= nil or selfOrVal.TextBox ~= nil)) or maybeVal ~= nil then
+                            v = maybeVal
+                        end
+                        tBox.Text = tostring(v or "")
+                    end,
                     TextBox = tBox,
                     Row = row
                 }

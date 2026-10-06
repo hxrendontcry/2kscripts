@@ -52,10 +52,11 @@
   {
     "id": "roll-a-fisherman",
     "name": "[ISLANDS] Roll a Fisherman 🎣",
+    "universeIds": [10636331438],
     "placeIds": [90920025162454],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_RollAFisherman_Hub.luau",
     "status": "active",
-    "version": "1.0",
+    "version": "1.1",
     "description": "Auto Collect, Auto Vacuum Money, Auto Sell & Unfavorite Fish, Plot Management & Live Status HUD"
   }
 ]
