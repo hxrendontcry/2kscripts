@@ -18,7 +18,7 @@ local localPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local currentPlaceId = game.PlaceId
 _G._2K_LOADER_ACTIVE = true
 
-local GITHUB_BASE = "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/"
+local GITHUB_BASE = "https://raw.githubusercontent.com/hxrendontcry/2kscripts/refs/heads/main/"
 local cacheBust = "?t=" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
 
 -- ── 1. INSTANT VISUAL FEEDBACK (HUD แสดงทันทีใน 0.01 วินาที) ───────────────
