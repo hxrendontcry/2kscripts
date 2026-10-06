@@ -203,6 +203,11 @@ function TwoKUI:CreateWindow(config)
     windowScale.Parent = mainFrame
 
     local function updateAdaptiveScale()
+        if _G.TwoSkiCustomScale and _G.TwoSkiCustomScale > 0 then
+            windowScale.Scale = math.clamp(_G.TwoSkiCustomScale, 0.28, 1.20)
+            return
+        end
+
         local vp = Camera and Camera.ViewportSize or Vector2.new(1920, 1080)
         local screenW = vp.X
         local screenH = vp.Y
@@ -210,13 +215,14 @@ function TwoKUI:CreateWindow(config)
         local baseW = 880
         local baseH = 520
         
-        if isMobile or screenW < 960 or screenH < 580 then
-            -- Leave generous margin for Roblox top bar, notch, and thumb controls
-            local availW = math.max(screenW - 40, 300)
-            local availH = math.max(screenH - 46, 250)
-            local scaleRatio = math.min(availW / baseW, availH / baseH)
-            -- Scale down dynamically so it NEVER fills 100% of the screen or clips off-screen!
-            windowScale.Scale = math.clamp(scaleRatio * 0.94, 0.45, 0.82)
+        if isMobile or screenW < 1000 or screenH < 600 then
+            -- Mobile / Cloud Emulator Compact Mode:
+            -- Target ~55% screen coverage so game world, character, and joysticks are never blocked!
+            local targetW = screenW * 0.58
+            local targetH = screenH * 0.60
+            local scaleRatio = math.min(targetW / baseW, targetH / baseH)
+            -- Clamp between 0.32x (small/cloud screens) and 0.48x (regular phones)
+            windowScale.Scale = math.clamp(scaleRatio, 0.32, 0.48)
         else
             windowScale.Scale = 1.0
         end
@@ -620,22 +626,19 @@ function TwoKUI:CreateWindow(config)
     contentArea.ZIndex = 4
     contentArea.Parent = mainFrame
 
-    local uiScale = Instance.new("UIScale")
-    uiScale.Scale = 1.0
-    uiScale.Parent = mainFrame
-
-    -- Window Object and Collections
+    -- Window Object and Collections (Unified WindowScale - Zero Duplicates)
     local Window = {
         ScreenGui = screenGui,
         MainFrame = mainFrame,
-        UIScale = uiScale,
+        UIScale = windowScale,
         Tabs = {},
         SelectedTab = nil,
         IsOpen = true
     }
 
     function Window:SetScale(scale)
-        uiScale.Scale = math.clamp(scale, 0.5, 1.5)
+        _G.TwoSkiCustomScale = scale
+        windowScale.Scale = math.clamp(scale, 0.28, 1.20)
     end
 
     function Window:Toggle()
