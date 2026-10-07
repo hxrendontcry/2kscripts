@@ -1,12 +1,9 @@
 -- ============================================================
---  2SKI Universal Script Hub & Telemetry Loader v3 (Turbo Fast Edition)
---  Features:
---    1. Instant On-Screen Visual Feedback (0ms latency HUD)
---    2. Pre-Routed Fast Game Dispatch (No waiting for games.json)
---    3. Cached Edge Requests (Fastly / Cloudflare 50ms responses)
---    4. Real-Time Telemetry to Web Dashboard
---    5. Lightweight Anti-Tamper & Error Recovery
+--  🚀 2K SCRIPT - UNIVERSAL MASTER LOADER (TURBO FAST)
+--  📋 วิธีใช้งาน: คัดลอกบรรทัดข้างล่างนี้ไปวางใน Executor แล้วกด Execute:
+--  loadstring(game:HttpGet("https://raw.githubusercontent.com/hxrendontcry/2kscripts/refs/heads/main/loader.luau"))()
 -- ============================================================
+
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
