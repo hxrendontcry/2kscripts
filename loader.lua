@@ -59,6 +59,7 @@ local function sendTelemetry(action, details)
 
             -- Telemetry endpoints: 24/7 Permanent Vercel Server + Localhost fallback
             local endpoints = {
+                "https://citizenship-rate-remained-calendars.trycloudflare.com/api/telemetry",
                 "https://2k-telemetry-dashboard.vercel.app/api/telemetry",
                 "http://localhost:3000/api/telemetry"
             }
