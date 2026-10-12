@@ -58,5 +58,15 @@
     "status": "active",
     "version": "1.1",
     "description": "Auto Collect, Auto Vacuum Money, Auto Sell & Unfavorite Fish, Plot Management & Live Status HUD"
+  },
+  {
+    "id": "build-an-ant-empire",
+    "name": "Build An Ant Empire 🐜",
+    "universeIds": [10436530264],
+    "placeIds": [78490532994307],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_AntEmpire_Hub.luau",
+    "status": "active",
+    "version": "2.0",
+    "description": "เสกเงินหลักล้านล้าน, เสกมดเทพ, เสกไอเทม/น้ำยา/ไข่สัตว์เลี้ยง, Auto อัพเกรดทุกสาย, บั๊กย้อนเวลา Rollback (NaN Food)"
   }
 ]

@@ -149,6 +149,15 @@ if okGames and gamesJson and gamesJson ~= "" then
                     end
                 end
             end
+            if not matchedGame and g.universeIds and type(g.universeIds) == "table" then
+                local currentUniverseId = game.GameId
+                for _, uid in ipairs(g.universeIds) do
+                    if tonumber(uid) == tonumber(currentUniverseId) then
+                        matchedGame = g
+                        break
+                    end
+                end
+            end
             if matchedGame then break end
         end
     end
