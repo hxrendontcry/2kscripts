@@ -94,7 +94,12 @@ local ICON_MAP = {
     ["pencil"]           = "rbxassetid://10734919691",
     ["repeat"]           = "rbxassetid://10734933966",
     ["trending-up"]      = "rbxassetid://10747363465",
-    ["unlock"]           = "rbxassetid://10747366027"
+    ["unlock"]           = "rbxassetid://10747366027",
+    ["egg"]              = "rbxassetid://10709782497",
+    ["drumstick"]        = "rbxassetid://10747363809",
+    ["shopping-cart"]    = "rbxassetid://10734950309",
+    ["compass"]          = "rbxassetid://10734906744",
+    ["flame"]            = "rbxassetid://10723376114"
 }
 
 local TwoKIcons = nil
@@ -196,42 +201,6 @@ function TwoKUI:CreateWindow(config)
     mainFrame.BorderSizePixel = 0
     mainFrame.ClipsDescendants = true
     mainFrame.Parent = screenGui
-
-    -- ── Adaptive Responsive Scaling for Mobile (Delta, Android, iOS, Tablets) ──
-    local windowScale = Instance.new("UIScale")
-    windowScale.Name = "WindowScale"
-    windowScale.Parent = mainFrame
-
-    local function updateAdaptiveScale()
-        if _G.TwoSkiCustomScale and _G.TwoSkiCustomScale > 0 then
-            windowScale.Scale = math.clamp(_G.TwoSkiCustomScale, 0.28, 1.20)
-            return
-        end
-
-        local vp = Camera and Camera.ViewportSize or Vector2.new(1920, 1080)
-        local screenW = vp.X
-        local screenH = vp.Y
-        
-        local baseW = 880
-        local baseH = 520
-        
-        if isMobile or screenW < 1000 or screenH < 600 then
-            -- Mobile / Cloud Emulator Compact Mode:
-            -- Target ~55% screen coverage so game world, character, and joysticks are never blocked!
-            local targetW = screenW * 0.58
-            local targetH = screenH * 0.60
-            local scaleRatio = math.min(targetW / baseW, targetH / baseH)
-            -- Clamp between 0.32x (small/cloud screens) and 0.48x (regular phones)
-            windowScale.Scale = math.clamp(scaleRatio, 0.32, 0.48)
-        else
-            windowScale.Scale = 1.0
-        end
-    end
-
-    updateAdaptiveScale()
-    if Camera then
-        Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateAdaptiveScale)
-    end
 
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 20)
@@ -453,60 +422,25 @@ function TwoKUI:CreateWindow(config)
     local btnMax = makeControlBtn("□", 34)
     local btnClose = makeControlBtn("✕", 68)
 
-    -- ── Rock-Solid Draggable Logic (Desktop Mouse + Mobile Touch + Delta compatible) ──
-    local dragging = false
-    local dragStart = Vector2.zero
-    local startPos = mainFrame.Position
-
-    local function onDragStart(input)
+    -- Draggable Logic for Topbar
+    local dragging, dragStart, startPos
+    topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
-            dragStart = Vector2.new(input.Position.X, input.Position.Y)
+            dragStart = input.Position
             startPos = mainFrame.Position
-        end
-    end
-
-    topbar.InputBegan:Connect(onDragStart)
-    brandContainer.InputBegan:Connect(onDragStart)
-
-    -- Make child labels non-active so touches pass cleanly to topbar
-    brandContainer.Active = false
-    titleLbl.Active = false
-    subTitleLbl.Active = false
-    perfLbl.Active = false
-    topbarLine.Active = false
-
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local current = Vector2.new(input.Position.X, input.Position.Y)
-            local delta = current - dragStart
-            local curScale = (windowScale and windowScale.Scale) or 1.0
-            
-            -- Compensate for UIScale so window tracks finger 1:1 on mobile without lagging or jumping
-            local scaledDeltaX = delta.X / curScale
-            local scaledDeltaY = delta.Y / curScale
-            
-            mainFrame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + scaledDeltaX,
-                startPos.Y.Scale,
-                startPos.Y.Offset + scaledDeltaY
-            )
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
         end
     end)
 
-    local function onDragEnd(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-    end
-
-    UserInputService.InputEnded:Connect(onDragEnd)
-    if UserInputService.TouchEnded then
-        UserInputService.TouchEnded:Connect(function()
-            dragging = false
-        end)
-    end
+    end)
 
     -- ─────────────────────────────────────────────────────────
     -- LEFT SIDEBAR (Tabs + User Profile Badge)
@@ -626,19 +560,22 @@ function TwoKUI:CreateWindow(config)
     contentArea.ZIndex = 4
     contentArea.Parent = mainFrame
 
-    -- Window Object and Collections (Unified WindowScale - Zero Duplicates)
+    local uiScale = Instance.new("UIScale")
+    uiScale.Scale = 1.0
+    uiScale.Parent = mainFrame
+
+    -- Window Object and Collections
     local Window = {
         ScreenGui = screenGui,
         MainFrame = mainFrame,
-        UIScale = windowScale,
+        UIScale = uiScale,
         Tabs = {},
         SelectedTab = nil,
         IsOpen = true
     }
 
     function Window:SetScale(scale)
-        _G.TwoSkiCustomScale = scale
-        windowScale.Scale = math.clamp(scale, 0.28, 1.20)
+        uiScale.Scale = math.clamp(scale, 0.5, 1.5)
     end
 
     function Window:Toggle()
@@ -674,19 +611,19 @@ function TwoKUI:CreateWindow(config)
     btnMin.MouseButton1Click:Connect(function() Window:Toggle() end)
     btnClose.MouseButton1Click:Connect(function() Window:Toggle() end)
 
-    -- Fullscreen / Fit Toggle
+    -- Fullscreen Toggle
     local isMax = false
     local originalSize = Size
     local function toggleMax()
         isMax = not isMax
         if isMax then
-            TweenService:Create(windowScale, TweenInfo.new(0.25), { Scale = 1.0 }):Play()
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
+                Size = UDim2.new(0.96, 0, 0.94, 0),
                 Position = UDim2.new(0.5, 0, 0.5, 0)
             }):Play()
         else
-            updateAdaptiveScale()
             TweenService:Create(mainFrame, TweenInfo.new(0.25), {
+                Size = originalSize,
                 Position = UDim2.new(0.5, 0, 0.5, 0)
             }):Play()
         end
@@ -748,47 +685,33 @@ function TwoKUI:CreateWindow(config)
                 ImageColor3 = Color3.fromHex("#00FFFF"),
                 ImageTransparency = 0.0
             }):Play()
+
+            local conn
+            conn = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    isResizing = false
+                    TweenService:Create(gripVisual, TweenInfo.new(0.2), {
+                        ImageColor3 = Color3.fromHex("#00E5FF"),
+                        ImageTransparency = 0.4
+                    }):Play()
+                    if conn then conn:Disconnect() end
+                end
+            end)
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
         if isResizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local current = Vector2.new(input.Position.X, input.Position.Y)
-            local delta = current - resizeStartMouse
-            local curScale = (windowScale and windowScale.Scale) or 1.0
+            local deltaX = input.Position.X - resizeStartMouse.X
+            local deltaY = input.Position.Y - resizeStartMouse.Y
 
-            local newW = math.clamp(resizeStartSize.X + (delta.X / curScale), 540, 1400)
-            local newH = math.clamp(resizeStartSize.Y + (delta.Y / curScale), 350, 900)
+            local newW = math.clamp(resizeStartSize.X + deltaX, 620, 1400)
+            local newH = math.clamp(resizeStartSize.Y + deltaY, 390, 900)
 
             mainFrame.Size = UDim2.fromOffset(newW, newH)
             originalSize = mainFrame.Size
         end
     end)
-
-    local function onResizeEnd(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if isResizing then
-                isResizing = false
-                TweenService:Create(gripVisual, TweenInfo.new(0.2), {
-                    ImageColor3 = Color3.fromHex("#00E5FF"),
-                    ImageTransparency = 0.4
-                }):Play()
-            end
-        end
-    end
-
-    UserInputService.InputEnded:Connect(onResizeEnd)
-    if UserInputService.TouchEnded then
-        UserInputService.TouchEnded:Connect(function()
-            if isResizing then
-                isResizing = false
-                TweenService:Create(gripVisual, TweenInfo.new(0.2), {
-                    ImageColor3 = Color3.fromHex("#00E5FF"),
-                    ImageTransparency = 0.4
-                }):Play()
-            end
-        end)
-    end
 
     -- ─────────────────────────────────────────────────────────
     -- TAB BUILDER
@@ -835,6 +758,7 @@ function TwoKUI:CreateWindow(config)
         tTitle.TextSize = 13
         tTitle.TextColor3 = Color3.fromHex("#CBD5E1")
         tTitle.TextXAlignment = Enum.TextXAlignment.Left
+        tTitle.TextYAlignment = Enum.TextYAlignment.Center
         tTitle.Size = UDim2.new(1, -44, 1, 0)
         tTitle.Position = UDim2.new(0, 40, 0, 0)
         tTitle.BackgroundTransparency = 1
@@ -1019,6 +943,7 @@ function TwoKUI:CreateWindow(config)
             hIcon.ImageColor3 = Color3.fromHex("#00FFFF")
             hIcon.Parent = headerIconBadge
 
+            local hasSecDesc = (secDesc ~= nil and secDesc ~= "")
             local hTitle = Instance.new("TextLabel")
             hTitle.Name = "Title"
             hTitle.Text = secTitle
@@ -1026,22 +951,26 @@ function TwoKUI:CreateWindow(config)
             hTitle.TextSize = 14
             hTitle.TextColor3 = Color3.fromHex("#FFFFFF")
             hTitle.TextXAlignment = Enum.TextXAlignment.Left
-            hTitle.Size = UDim2.new(1, -44, 0, 18)
-            hTitle.Position = UDim2.new(0, 42, 0, 0)
+            hTitle.TextYAlignment = Enum.TextYAlignment.Center
+            hTitle.Size = UDim2.new(1, -44, 0, hasSecDesc and 20 or 26)
+            hTitle.Position = UDim2.new(0, 42, 0.5, hasSecDesc and -17 or -13)
             hTitle.BackgroundTransparency = 1
             hTitle.Parent = headerFrame
 
-            local hDesc = Instance.new("TextLabel")
-            hDesc.Name = "Desc"
-            hDesc.Text = secDesc
-            hDesc.Font = Enum.Font.Gotham
-            hDesc.TextSize = 11
-            hDesc.TextColor3 = Color3.fromHex("#94A3B8")
-            hDesc.TextXAlignment = Enum.TextXAlignment.Left
-            hDesc.Size = UDim2.new(1, -44, 0, 16)
-            hDesc.Position = UDim2.new(0, 42, 0, 18)
-            hDesc.BackgroundTransparency = 1
-            hDesc.Parent = headerFrame
+            if hasSecDesc then
+                local hDesc = Instance.new("TextLabel")
+                hDesc.Name = "Desc"
+                hDesc.Text = secDesc
+                hDesc.Font = Enum.Font.Gotham
+                hDesc.TextSize = 11
+                hDesc.TextColor3 = Color3.fromHex("#94A3B8")
+                hDesc.TextXAlignment = Enum.TextXAlignment.Left
+                hDesc.TextYAlignment = Enum.TextYAlignment.Center
+                hDesc.Size = UDim2.new(1, -44, 0, 16)
+                hDesc.Position = UDim2.new(0, 42, 0.5, 3)
+                hDesc.BackgroundTransparency = 1
+                hDesc.Parent = headerFrame
+            end
 
             local Section = {
                 Card = card,
@@ -1098,26 +1027,29 @@ function TwoKUI:CreateWindow(config)
             -- Helper: make title/desc
             local function makeRowTexts(row, title, desc, rightOffset)
                 rightOffset = rightOffset or 60
+                local hasDesc = (desc ~= nil and desc ~= "")
                 local t = Instance.new("TextLabel")
                 t.Text = title
                 t.Font = Enum.Font.GothamBold
                 t.TextSize = 13
                 t.TextColor3 = Color3.fromHex("#FFFFFF")
                 t.TextXAlignment = Enum.TextXAlignment.Left
-                t.Size = UDim2.new(1, -(52 + rightOffset), 0, desc and 18 or 28)
-                t.Position = UDim2.new(0, 48, 0.5, desc and -16 or -14)
+                t.TextYAlignment = Enum.TextYAlignment.Center
+                t.Size = UDim2.new(1, -(52 + rightOffset), 0, hasDesc and 20 or 26)
+                t.Position = UDim2.new(0, 48, 0.5, hasDesc and -17 or -13)
                 t.BackgroundTransparency = 1
                 t.Parent = row
 
-                if desc and desc ~= "" then
+                if hasDesc then
                     local d = Instance.new("TextLabel")
                     d.Text = desc
                     d.Font = Enum.Font.GothamBold
                     d.TextSize = 10
                     d.TextColor3 = Color3.fromHex("#CBD5E1")
                     d.TextXAlignment = Enum.TextXAlignment.Left
-                    d.Size = UDim2.new(1, -(52 + rightOffset), 0, 14)
-                    d.Position = UDim2.new(0, 48, 0.5, 2)
+                    d.TextYAlignment = Enum.TextYAlignment.Center
+                    d.Size = UDim2.new(1, -(52 + rightOffset), 0, 16)
+                    d.Position = UDim2.new(0, 48, 0.5, 3)
                     d.BackgroundTransparency = 1
                     d.Parent = row
                 end
@@ -1204,10 +1136,13 @@ function TwoKUI:CreateWindow(config)
                     }):Play()
                 end)
 
-                return {
+                local toggleObj = {
                     SetValue = updateToggle,
+                    GetValue = function() return val end,
                     Row = row
                 }
+                toggleObj.Set = toggleObj.SetValue
+                return toggleObj
             end
 
             -- 2. SLIDER (Draggable Track + Number Badge)
@@ -1219,6 +1154,14 @@ function TwoKUI:CreateWindow(config)
                 local minVal = cfg.Min or 0
                 local maxVal = cfg.Max or 100
                 local curVal = cfg.Default or minVal
+                if type(cfg.Value) == "table" then
+                    minVal = cfg.Value.Min or minVal
+                    maxVal = cfg.Value.Max or maxVal
+                    curVal = cfg.Value.Default or cfg.Value.Value or curVal
+                elseif type(cfg.Value) == "number" then
+                    curVal = cfg.Value
+                end
+                local step = cfg.Step or 1
                 local callback = cfg.Callback or function() end
 
                 local row = makeRow(52)
@@ -1294,7 +1237,14 @@ function TwoKUI:CreateWindow(config)
                     if trackW <= 0 then return end
                     local alpha = math.clamp((x - trackX) / trackW, 0, 1)
                     local rawVal = minVal + (alpha * (maxVal - minVal))
-                    local val = (maxVal - minVal > 20) and math.round(rawVal) or (math.round(rawVal * 100) / 100)
+                    local val
+                    if step and step > 0 then
+                        val = math.round((rawVal - minVal) / step) * step + minVal
+                        val = math.clamp(val, minVal, maxVal)
+                        if step < 1 then val = math.round(val * 100) / 100 else val = math.round(val) end
+                    else
+                        val = (maxVal - minVal > 20) and math.round(rawVal) or (math.round(rawVal * 100) / 100)
+                    end
                     curVal = val
                     numBadge.Text = tostring(val)
                     fill.Size = UDim2.new(alpha, 0, 1, 0)
@@ -1321,7 +1271,7 @@ function TwoKUI:CreateWindow(config)
                     end
                 end)
 
-                return {
+                local sliderObj = {
                     SetValue = function(selfOrVal, maybeVal)
                         local v = selfOrVal
                         if (type(selfOrVal) == "table" and (selfOrVal.Row ~= nil or selfOrVal.SetValue ~= nil)) or maybeVal ~= nil then
@@ -1329,13 +1279,17 @@ function TwoKUI:CreateWindow(config)
                         end
                         if type(v) ~= "number" then return end
                         curVal = math.clamp(v, minVal, maxVal)
-                        local alpha = (curVal - minVal) / (maxVal - minVal)
+                        local alpha = (maxVal > minVal) and ((curVal - minVal) / (maxVal - minVal)) or 0
                         numBadge.Text = tostring(curVal)
                         fill.Size = UDim2.new(alpha, 0, 1, 0)
                         thumb.Position = UDim2.new(alpha, 0, 0.5, 0)
                         task.spawn(callback, curVal)
-                    end
+                    end,
+                    GetValue = function() return curVal end,
+                    Row = row
                 }
+                sliderObj.Set = sliderObj.SetValue
+                return sliderObj
             end
 
             -- 3. DROPDOWN (Sleek Accordion Tray - Supports Single & Multi Selection)
@@ -1348,9 +1302,19 @@ function TwoKUI:CreateWindow(config)
                 local isMulti = cfg.Multi or cfg.MultiSelect or false
                 local curVal = cfg.Value
                 if isMulti then
-                    if type(curVal) ~= "table" then
-                        curVal = {}
+                    local map = {}
+                    if type(curVal) == "table" then
+                        for k, v in pairs(curVal) do
+                            if type(k) == "number" and type(v) == "string" then
+                                map[v] = true
+                            elseif type(k) == "string" and (v == true or v == 1) then
+                                map[k] = true
+                            end
+                        end
+                    elseif type(curVal) == "string" and curVal ~= "" then
+                        map[curVal] = true
                     end
+                    curVal = map
                 else
                     curVal = curVal or values[1] or ""
                 end
@@ -1376,12 +1340,12 @@ function TwoKUI:CreateWindow(config)
                 header.Parent = row
 
                 makeRowIcon(header, icon)
-                makeRowTexts(header, title, desc, 160)
+                makeRowTexts(header, title, desc, 195)
 
                 local dropBtn = Instance.new("TextButton")
                 dropBtn.Name = "SelectorBadge"
-                dropBtn.Size = UDim2.fromOffset(150, 30)
-                dropBtn.Position = UDim2.new(1, -160, 0.5, -15)
+                dropBtn.Size = UDim2.fromOffset(185, 30)
+                dropBtn.Position = UDim2.new(1, -195, 0.5, -15)
                 dropBtn.BackgroundColor3 = Color3.fromHex("#081A33")
                 dropBtn.BackgroundTransparency = 0.2
                 dropBtn.Text = ""
@@ -1406,6 +1370,12 @@ function TwoKUI:CreateWindow(config)
                         if curVal[opt] == true then
                             count = count + 1
                             table.insert(selList, opt)
+                        end
+                    end
+                    for k, v in pairs(curVal) do
+                        if v == true and not table.find(values, k) then
+                            count = count + 1
+                            table.insert(selList, k)
                         end
                     end
                     if count == 0 then
@@ -1583,6 +1553,7 @@ function TwoKUI:CreateWindow(config)
                         optBtn.MouseButton1Click:Connect(function()
                             if isMulti then
                                 curVal[opt] = not curVal[opt]
+                                if not curVal[opt] then curVal[opt] = nil end
                                 lbl.Text = getDisplayText()
                                 updateSelectionHighlight()
                                 task.spawn(callback, curVal)
@@ -1599,20 +1570,24 @@ function TwoKUI:CreateWindow(config)
 
                 renderOptions(values)
 
-                return {
+                local dropObj = {
                     SetValue = function(selfOrVal, maybeVal)
                         local v = selfOrVal
                         if (type(selfOrVal) == "table" and (selfOrVal.Row ~= nil or selfOrVal.SetValues ~= nil)) or maybeVal ~= nil then
                             v = maybeVal
                         end
                         if isMulti then
+                            curVal = {}
                             if type(v) == "table" then
-                                curVal = {}
                                 for k, val in pairs(v) do
-                                    if type(val) == "boolean" then
-                                        curVal[k] = val
+                                    if type(k) == "number" and type(val) == "string" then
+                                        curVal[val] = true
+                                    elseif type(k) == "string" and (val == true or val == 1) then
+                                        curVal[k] = true
                                     end
                                 end
+                            elseif type(v) == "string" and v ~= "" then
+                                curVal[v] = true
                             end
                             lbl.Text = getDisplayText()
                         else
@@ -1628,6 +1603,10 @@ function TwoKUI:CreateWindow(config)
                     GetValue = function() return curVal end,
                     Row = row
                 }
+                dropObj.Set = dropObj.SetValue
+                dropObj.Select = dropObj.SetValue
+                dropObj.Refresh = dropObj.SetValues
+                return dropObj
             end
 
             -- 4. BUTTON (Interactive Action Card)
@@ -1754,6 +1733,7 @@ function TwoKUI:CreateWindow(config)
                 return {
                     SetTitle = setTitle,
                     SetDesc = setDesc,
+                    SetContent = setDesc,
                     TitleLabel = tLbl,
                     DescLabel = dLbl,
                     Row = row
