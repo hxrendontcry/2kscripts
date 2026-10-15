@@ -68,5 +68,14 @@
     "status": "active",
     "version": "2.0",
     "description": "เสกเงินหลักล้านล้าน, เสกมดเทพ, เสกไอเทม/น้ำยา/ไข่สัตว์เลี้ยง, Auto อัพเกรดทุกสาย, บั๊กย้อนเวลา Rollback (NaN Food)"
+  },
+  {
+    "id": "my-anime-mine",
+    "name": "My Anime Mine ⛏️",
+    "placeIds": [79389059854988],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/MyAnimeMine.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "TwoKUI Chidori Lightning Edition • Auto Equip Best Miners • Multi-Zone Progression"
   }
 ]
