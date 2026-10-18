@@ -86,5 +86,15 @@
     "status": "active",
     "version": "1.0",
     "description": "Infinite Auto Throw, Auto Train Skill, Auto Rebirth, Auto Buy Stones & Trails, Auto Hatch & Equip Best"
+  },
+  {
+    "id": "word-chain",
+    "name": "ห่วงคำภาษาไทย 📖",
+    "universeIds": [10768827250],
+    "placeIds": [101001957765810],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_WordChain_Hub.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "Auto Answer (Server Dictionary), Word Hints, Auto Join Table, Auto Claim Quests & Daily"
   }
 ]
