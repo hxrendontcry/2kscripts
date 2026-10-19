@@ -96,5 +96,15 @@
     "status": "active",
     "version": "1.0",
     "description": "Auto Answer (Server Dictionary), Word Hints, Auto Join Table, Auto Claim Quests & Daily"
+  },
+  {
+    "id": "deep-fishing",
+    "name": "[🎃] Deep Fishing 🎣",
+    "universeIds": [10526853622],
+    "placeIds": [132239307080610],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_DeepFishing_Hub.luau",
+    "status": "active",
+    "version": "2.3",
+    "description": "All-in-One Auto Fishing Engine • Multi-Bait Buy & Equip • Multi-Potion Stacking • Smart Teleport Sell • Auto Upgrades"
   }
 ]
