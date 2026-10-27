@@ -2,7 +2,9 @@
   {
     "id": "loot-to-forge",
     "name": "+1 ของรางวัลที่จะหลอม (Loot to Forge)",
-    "placeIds": [118805555015549],
+    "placeIds": [
+      118805555015549
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/LootToForge.luau",
     "status": "active",
     "version": "2.2",
@@ -11,7 +13,9 @@
   {
     "id": "open-sea",
     "name": "Open Sea For Animals!",
-    "placeIds": [88047783411976],
+    "placeIds": [
+      88047783411976
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/OpenSeaHub.luau",
     "status": "active",
     "version": "1.0",
@@ -20,7 +24,9 @@
   {
     "id": "build-the-pyramid",
     "name": "Build the Pyramid!",
-    "placeIds": [123720558354386],
+    "placeIds": [
+      123720558354386
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/BuildThePyramid.luau",
     "status": "active",
     "version": "1.0",
@@ -29,7 +35,9 @@
   {
     "id": "sniper-arena",
     "name": "[🔥NEW SNIPER] Sniper Arena",
-    "universeIds": [9534705677],
+    "universeIds": [
+      9534705677
+    ],
     "placeIds": [
       122446657157717,
       119259569670784,
@@ -43,7 +51,9 @@
   {
     "id": "anime-dice",
     "name": "Anime Dice 🎲",
-    "placeIds": [113290951185459],
+    "placeIds": [
+      113290951185459
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/AnimeDice.luau",
     "status": "active",
     "version": "2.0",
@@ -52,8 +62,12 @@
   {
     "id": "roll-a-fisherman",
     "name": "[ISLANDS] Roll a Fisherman 🎣",
-    "universeIds": [10636331438],
-    "placeIds": [90920025162454],
+    "universeIds": [
+      10636331438
+    ],
+    "placeIds": [
+      90920025162454
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_RollAFisherman_Hub.luau",
     "status": "active",
     "version": "1.1",
@@ -62,8 +76,12 @@
   {
     "id": "build-an-ant-empire",
     "name": "Build An Ant Empire 🐜",
-    "universeIds": [10436530264],
-    "placeIds": [78490532994307],
+    "universeIds": [
+      10436530264
+    ],
+    "placeIds": [
+      78490532994307
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_AntEmpire_Hub.luau",
     "status": "active",
     "version": "2.0",
@@ -72,7 +90,9 @@
   {
     "id": "my-anime-mine",
     "name": "My Anime Mine ⛏️",
-    "placeIds": [79389059854988],
+    "placeIds": [
+      79389059854988
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/MyAnimeMine.luau",
     "status": "active",
     "version": "1.0",
@@ -81,7 +101,9 @@
   {
     "id": "stone-skipping",
     "name": "+1 Stone Skipping 🪨",
-    "placeIds": [111543903102439],
+    "placeIds": [
+      111543903102439
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/StoneSkipping.luau",
     "status": "active",
     "version": "1.0",
@@ -90,8 +112,12 @@
   {
     "id": "word-chain",
     "name": "ห่วงคำภาษาไทย 📖",
-    "universeIds": [10768827250],
-    "placeIds": [101001957765810],
+    "universeIds": [
+      10768827250
+    ],
+    "placeIds": [
+      101001957765810
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_WordChain_Hub.luau",
     "status": "active",
     "version": "1.0",
@@ -100,11 +126,29 @@
   {
     "id": "deep-fishing",
     "name": "[🎃] Deep Fishing 🎣",
-    "universeIds": [10526853622],
-    "placeIds": [132239307080610],
+    "universeIds": [
+      10526853622
+    ],
+    "placeIds": [
+      132239307080610
+    ],
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_DeepFishing_Hub.luau",
     "status": "active",
     "version": "2.3",
     "description": "All-in-One Auto Fishing Engine • Multi-Bait Buy & Equip • Multi-Potion Stacking • Smart Teleport Sell • Auto Upgrades"
+  },
+  {
+    "id": "durian-garden",
+    "name": "Durian Garden 🍈",
+    "universeIds": [
+      10772253152
+    ],
+    "placeIds": [
+      91350038154849
+    ],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/DurianGarden.luau",
+    "status": "active",
+    "version": "2.0",
+    "description": "เก็บเกี่ยว/ขาย/ปลูก/รดน้ำอัตโนมัติ, ซื้อเมล็ดและปุ๋ย, ปลดล็อกแปลง/โรงนา, จ้างคนสวน, รีเบิร์ธ, ESP ผลสุก, บิน/วิ่งเร็ว"
   }
 ]
