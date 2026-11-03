@@ -158,7 +158,13 @@ function TwoKUI:CreateWindow(config)
     local Title = config.Title or "2K SCRIPT"
     local SubTitle = config.SubTitle or "ROBLOX SCRIPT EXECUTOR & TOOLS"
     local Keybind = config.Keybind or Enum.KeyCode.LeftControl
-    local Size = config.Size or UDim2.fromOffset(880, 520)
+    
+    local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+    local defaultSize = isMobile and UDim2.fromOffset(590, 370) or UDim2.fromOffset(780, 480)
+    local Size = config.Size or defaultSize
+    if isMobile and (Size.X.Offset > 640 or Size.Y.Offset > 400) then
+        Size = UDim2.fromOffset(590, 370)
+    end
     
     local container = getGuiContainer()
     
@@ -201,6 +207,37 @@ function TwoKUI:CreateWindow(config)
     mainFrame.BorderSizePixel = 0
     mainFrame.ClipsDescendants = true
     mainFrame.Parent = screenGui
+
+    -- Responsive Mobile / Screen Scale (Prevents full-screen explosion on mobile)
+    local uiScale = Instance.new("UIScale")
+    uiScale.Name = "WindowScale"
+    uiScale.Parent = mainFrame
+
+    local function applyResponsiveScale()
+        local c = Workspace.CurrentCamera
+        local currentVp = (c and c.ViewportSize) or Vector2.new(1280, 720)
+        local isTouch = UserInputService.TouchEnabled
+        
+        local currentW = (mainFrame.AbsoluteSize.X > 0 and mainFrame.AbsoluteSize.X) or Size.X.Offset
+        local currentH = (mainFrame.AbsoluteSize.Y > 0 and mainFrame.AbsoluteSize.Y) or Size.Y.Offset
+        
+        -- Cap window dimensions so it NEVER covers full screen (leaves margin on mobile)
+        local maxTargetW = currentVp.X * (isTouch and 0.82 or 0.88)
+        local maxTargetH = currentVp.Y * (isTouch and 0.80 or 0.85)
+        
+        local scaleFactor = math.min(maxTargetW / currentW, maxTargetH / currentH, 1.0)
+        if isTouch then
+            scaleFactor = math.clamp(scaleFactor, 0.48, 0.88)
+        else
+            scaleFactor = math.clamp(scaleFactor, 0.60, 1.0)
+        end
+        uiScale.Scale = scaleFactor
+    end
+
+    applyResponsiveScale()
+    if Workspace.CurrentCamera then
+        Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(applyResponsiveScale)
+    end
 
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 20)
@@ -1298,9 +1335,9 @@ function TwoKUI:CreateWindow(config)
                 local title = cfg.Title or "Dropdown"
                 local desc = cfg.Desc or ""
                 local icon = cfg.Icon or "chevron-up"
-                local values = cfg.Values or {}
+                local values = cfg.Values or cfg.Options or {}
                 local isMulti = cfg.Multi or cfg.MultiSelect or false
-                local curVal = cfg.Value
+                local curVal = cfg.Value or cfg.Default
                 if isMulti then
                     local map = {}
                     if type(curVal) == "table" then
@@ -1465,7 +1502,11 @@ function TwoKUI:CreateWindow(config)
                 end
 
                 local isOpen = false
+                local lastToggle = 0
                 local function toggleMenu()
+                    local now = os.clock()
+                    if now - lastToggle < 0.15 then return end
+                    lastToggle = now
                     isOpen = not isOpen
                     arrow.Text = isOpen and "▴" or "▾"
                     divider.Visible = isOpen
