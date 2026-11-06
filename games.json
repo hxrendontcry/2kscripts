@@ -57,7 +57,7 @@
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/AnimeDice.luau",
     "status": "active",
     "version": "2.0",
-    "description": "🎃 Halloween Event Hub (Pumpkin Dice x1/x5, Candy Upgrades, Pumpkin Pass, Trick or Treat Multi-Door) • Full Tower Roster • Auto Roll & Collect • Live Status HUD"
+    "description": "🎃 Halloween Event Hub (Pumpkin Dice x1/x5, Candy Upgrades, Pumpkin Pass) • Full Tower Roster • Auto Roll & Collect"
   },
   {
     "id": "roll-a-fisherman",
@@ -149,7 +149,21 @@
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/DurianGarden.luau",
     "status": "active",
     "version": "2.0",
-    "description": "เก็บเกี่ยว/ขาย/ปลูก/รดน้ำอัตโนมัติ, ซื้อเมล็ดและปุ๋ย, ปลดล็อกแปลง/โรงนา, จ้างคนสวน, รีเบิร์ธ, ESP ผลสุก, บิน/วิ่งเร็ว"
+    "description": "เก็บเกี่ยว/ขาย/ปลูก/รดน้ำอัตโนมัติ, ซื้อเมล็ดและปุ๋ย, ปลดล็อกแปลง/โรงนา, จ้างคนสวน, รีเบิร์ธ, ESP ผลสุก"
+  },
+  {
+    "id": "thai-quiz",
+    "name": "ตอบคำถามภาษาไทย (Thai Quiz Duels) 🧠",
+    "universeIds": [
+      10771403972
+    ],
+    "placeIds": [
+      121878558222387
+    ],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_ThaiQuiz_Hub.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "Auto Answer คลังศัพท์ 33 หมวด 23 พยัญชนะ, Instant Dict Lookup, Real-time Card Sync, Auto Stop จบรอบชนะทันที"
   },
   {
     "id": "throw-food-for-animals",
@@ -163,6 +177,6 @@
     "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/ThrowFoodForAnimals.luau",
     "status": "active",
     "version": "1.0",
-    "description": "Auto Throw Food, Always Perfect Meter, Auto Boost Zone, Auto Super & Ring Rush, Auto Train & Tap Bonus, Auto Equip Best & Sell Animals, Auto Upgrades"
+    "description": "Fast Instant 100% Perfect Throw, Auto Boost Zone, Auto Super & Ring Rush, Auto Train x2 XP, Auto Equip Best & Sell Animals, Auto Upgrades"
   }
 ]
