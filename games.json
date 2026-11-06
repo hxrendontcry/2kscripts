@@ -150,5 +150,19 @@
     "status": "active",
     "version": "2.0",
     "description": "เก็บเกี่ยว/ขาย/ปลูก/รดน้ำอัตโนมัติ, ซื้อเมล็ดและปุ๋ย, ปลดล็อกแปลง/โรงนา, จ้างคนสวน, รีเบิร์ธ, ESP ผลสุก, บิน/วิ่งเร็ว"
+  },
+  {
+    "id": "throw-food-for-animals",
+    "name": "Throw Food For Animals! 🥩",
+    "universeIds": [
+      10766972131
+    ],
+    "placeIds": [
+      120219252362013
+    ],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/ThrowFoodForAnimals.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "Auto Throw Food, Always Perfect Meter, Auto Boost Zone, Auto Super & Ring Rush, Auto Train & Tap Bonus, Auto Equip Best & Sell Animals, Auto Upgrades"
   }
 ]
