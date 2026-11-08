@@ -2848,7 +2848,6 @@ local S = {
     AutoStealReturn = true,
     AutoSwing = false,
     TargetStage = "Stage 1 (Beach Zone)",
-    TravelSpeed = 100,
     AntiGuardian = false,
 
     -- PETS & EGGS
@@ -3125,8 +3124,8 @@ local function exitTreadmillIfOn()
     end
 end
 
--- Safe Movement Function (100% Server-Synced Speed & Smart Waypoint Routing / Zero Error 267)
-local function safeMoveTowards(targetPos, _, arriveDistance)
+-- Safe Movement Function (วิ่งตามค่าความเร็วจริงของเกม 100% Native Game Speed / Zero Error 267)
+local function safeMoveTowards(targetPos, arriveDistance)
     local char = LocalPlayer.Character
     if not char then return false end
     local hum = char:FindFirstChildOfClass("Humanoid")
@@ -3135,7 +3134,7 @@ local function safeMoveTowards(targetPos, _, arriveDistance)
 
     arriveDistance = arriveDistance or 6
 
-    -- Ensure SlowMode is disabled so the server grants full physical speed
+    -- ปิด SlowMode เพื่อให้เซิร์ฟเวอร์และเกมใช้ความเร็วจริงเต็มพิกัดของตัวละคร
     if LocalPlayer:GetAttribute("SlowMode") == true and SetSlowModeRemote then
         pcall(function()
             SetSlowModeRemote:FireServer(false)
@@ -3319,7 +3318,7 @@ local function runAutomationStep()
         if not onTM then
             local mountPos = getMyTreadmillMount()
             if mountPos then
-                safeMoveTowards(mountPos, S.TravelSpeed or 125, 2)
+                safeMoveTowards(mountPos, 2)
             end
         end
         return
@@ -3329,7 +3328,6 @@ local function runAutomationStep()
     if S.AutoDig then
         exitTreadmillIfOn()
 
-        local moveSpd = S.TravelSpeed or 125
         local chosen = STAGE_DATA[S.TargetStage] or STAGE_DATA["Stage 1 (Beach Zone)"]
         local minZ = chosen.minZ or 0
         local maxZ = chosen.maxZ or 120
@@ -3343,10 +3341,10 @@ local function runAutomationStep()
         if carryingEgg then
             UI:SetStatus("กำลังถือไข่! วิ่งกลับข้ามเส้น Safe Line เข้าเล้า...")
             local safeHubTarget = Vector3.new(0, hrp.Position.Y, -12)
-            local arrived = safeMoveTowards(safeHubTarget, moveSpd, 4)
+            local arrived = safeMoveTowards(safeHubTarget, 4)
             if arrived or hrp.Position.Z <= -5 then
                 local penBoxPos = getMyPenBoxCenter()
-                safeMoveTowards(penBoxPos, moveSpd, 6)
+                safeMoveTowards(penBoxPos, 6)
                 pcall(function()
                     PlaceEggRemote:FireServer(carryingEgg, penBoxPos + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2)))
                 end)
@@ -3380,7 +3378,7 @@ local function runAutomationStep()
         -- If player is not yet inside the selected stage bounds, travel straight to the selected stage first!
         if hrp.Position.Z < (minZ - 12) or hrp.Position.Z > (maxZ + 12) then
             UI:SetStatus("กำลังวิ่งตรงไปยัง " .. chosen.name .. " (ข้ามโซนอื่น)...")
-            safeMoveTowards(Vector3.new(0, hrp.Position.Y, chosen.z), moveSpd, 10)
+            safeMoveTowards(Vector3.new(0, hrp.Position.Y, chosen.z), 10)
             return
         end
 
@@ -3406,7 +3404,7 @@ local function runAutomationStep()
 
         if eggToSteal then
             UI:SetStatus("พบไข่ใน " .. chosen.name .. "! กำลังพุ่งไปขโมย...")
-            local arrived = safeMoveTowards(eggToSteal.pos, moveSpd, 6)
+            local arrived = safeMoveTowards(eggToSteal.pos, 6)
             if arrived or (hrp.Position - eggToSteal.pos).Magnitude <= 9 then
                 if fireproximityprompt then
                     fireproximityprompt(eggToSteal.prompt)
@@ -3451,7 +3449,7 @@ local function runAutomationStep()
 
         if nearestMarker then
             -- Move to marker in target stage and dig!
-            local arrived = safeMoveTowards(nearestMarker.pos, moveSpd, 7)
+            local arrived = safeMoveTowards(nearestMarker.pos, 7)
             if arrived or (hrp.Position - nearestMarker.pos).Magnitude <= 10 then
                 equipToolKind("Shovel")
                 local delayTime = S.FastDig and 0.14 or 0.28
@@ -3473,7 +3471,7 @@ local function runAutomationStep()
             local patrolX = scoutDirection * 28
 
             UI:SetStatus("กำลังสแกนหาไข่เฉพาะใน " .. chosen.name .. "...")
-            local arrived = safeMoveTowards(Vector3.new(patrolX, hrp.Position.Y, targetZ), moveSpd, 8)
+            local arrived = safeMoveTowards(Vector3.new(patrolX, hrp.Position.Y, targetZ), 8)
             if arrived then
                 scoutDirection = -scoutDirection
             end
@@ -3739,18 +3737,6 @@ UIControls.TargetStage = farmSec:Dropdown({
     end,
 })
 
-UIControls.TravelSpeed = farmSec:Slider({
-    Name = "ความเร็ววิ่งฟาร์ม (FARM TRAVEL SPEED)",
-    Min = 50,
-    Max = 160,
-    Default = S.TravelSpeed or 125,
-    Precision = 0,
-    Callback = function(val)
-        S.TravelSpeed = val
-        UI:SetStatus("ความเร็ววิ่งฟาร์ม: " .. tostring(val) .. " studs/s")
-    end,
-})
-
 local combatSec = farmTab:Section("COMBAT & DEFENSE (การต่อสู้ & ป้องกันตัว)")
 
 UIControls.AutoSwing = combatSec:Toggle({
@@ -3925,7 +3911,7 @@ tpSec:Button({
     Name = "เดินกลับเล้าของตัวเอง (WALK TO MY PEN)",
     Callback = function()
         exitTreadmillIfOn()
-        safeMoveTowards(getMyPenSpawn(), S.TravelSpeed or 125, 4)
+        safeMoveTowards(getMyPenSpawn(), 4)
         UI:SetStatus("เดินกลับเล้าเรียบร้อย")
     end,
 })
@@ -3935,7 +3921,7 @@ tpSec:Button({
     Callback = function()
         local mount = getMyTreadmillMount()
         if mount then
-            safeMoveTowards(mount, S.TravelSpeed or 125, 2)
+            safeMoveTowards(mount, 2)
             UI:SetStatus("เดินไปลู่วิ่งเรียบร้อย")
         end
     end,
@@ -3957,7 +3943,7 @@ tpSec:Button({
         exitTreadmillIfOn()
         local chosen = STAGE_DATA[selectedTpStage]
         if chosen then
-            safeMoveTowards(Vector3.new(0, 3, chosen.z), S.TravelSpeed or 125, 8)
+            safeMoveTowards(Vector3.new(0, 3, chosen.z), 8)
             UI:SetStatus("เดินทางไป " .. chosen.name .. " เรียบร้อย")
         end
     end,
