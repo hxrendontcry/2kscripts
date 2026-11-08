@@ -189,5 +189,19 @@
     "status": "active",
     "version": "1.0",
     "description": "RobloxZ 1000z Full Hub - Silent Aim, TriggerBot, FOV Circle, Combat & Automation"
+  },
+  {
+    "id": "detect-and-steal-an-egg",
+    "name": "Detect and Steal an Egg 🥚",
+    "universeIds": [
+      10769407594
+    ],
+    "placeIds": [
+      135069647210029
+    ],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/DetectAndStealAnEgg.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "Auto Treadmill Speed Farm, Auto Dig & Steal Eggs, Fast Instant Dig, Auto Hatch & Equip Best, Auto Sell Pets, Auto Upgrades & Claims"
   }
 ]
