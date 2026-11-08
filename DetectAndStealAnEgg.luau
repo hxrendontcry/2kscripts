@@ -2842,6 +2842,7 @@ local S = {
     AutoStealReturn = true,
     AutoSwing = false,
     TargetStage = "Stage 1 (Beach Zone)",
+    TravelSpeed = 125,
     AntiGuardian = false,
 
     -- PETS & EGGS
@@ -2875,16 +2876,16 @@ local S = {
 }
 
 local STAGE_DATA = {
-    ["Stage 1 (Beach Zone)"] = { index = 1, z = 60, name = "Beach Zone" },
-    ["Stage 2 (Jungle)"] = { index = 2, z = 160, name = "Jungle" },
-    ["Stage 3 (Ice & Frost)"] = { index = 3, z = 310, name = "Ice & Frost" },
-    ["Stage 4 (Swamp)"] = { index = 4, z = 510, name = "Swamp" },
-    ["Stage 5 (Sea / Kraken)"] = { index = 5, z = 720, name = "Sea / Kraken" },
-    ["Stage 6 (Spike Wasteland)"] = { index = 6, z = 910, name = "Spike Wasteland" },
-    ["Stage 7 (Volcano)"] = { index = 7, z = 1160, name = "Volcano" },
-    ["Stage 8 (Jade Forest)"] = { index = 8, z = 1530, name = "Jade Forest" },
-    ["Stage 9 (Astral Dragon)"] = { index = 9, z = 1880, name = "Astral Dragon" },
-    ["Stage 10 (Olympus Zeus)"] = { index = 10, z = 2320, name = "Olympus Zeus" },
+    ["Stage 1 (Beach Zone)"] = { index = 1, minZ = 0, maxZ = 120, z = 60, name = "Beach Zone" },
+    ["Stage 2 (Jungle)"] = { index = 2, minZ = 120, maxZ = 255, z = 187, name = "Jungle" },
+    ["Stage 3 (Ice & Frost)"] = { index = 3, minZ = 255, maxZ = 420, z = 337, name = "Ice & Frost" },
+    ["Stage 4 (Swamp)"] = { index = 4, minZ = 420, maxZ = 595, z = 507, name = "Swamp" },
+    ["Stage 5 (Sea / Kraken)"] = { index = 5, minZ = 595, maxZ = 795, z = 695, name = "Sea / Kraken" },
+    ["Stage 6 (Spike Wasteland)"] = { index = 6, minZ = 795, maxZ = 1035, z = 915, name = "Spike Wasteland" },
+    ["Stage 7 (Volcano)"] = { index = 7, minZ = 1035, maxZ = 1355, z = 1195, name = "Volcano" },
+    ["Stage 8 (Jade Forest)"] = { index = 8, minZ = 1355, maxZ = 1695, z = 1525, name = "Jade Forest" },
+    ["Stage 9 (Astral Dragon)"] = { index = 9, minZ = 1695, maxZ = 2115, z = 1905, name = "Astral Dragon" },
+    ["Stage 10 (Olympus Zeus)"] = { index = 10, minZ = 2115, maxZ = 2555, z = 2335, name = "Olympus Zeus" },
 }
 
 local STAGE_OPTIONS = {
@@ -3105,12 +3106,13 @@ local function safeMoveTowards(targetPos, speed, arriveDistance)
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hum or not hrp then return false end
 
-    speed = speed or 42
-    arriveDistance = arriveDistance or 5
+    speed = speed or S.TravelSpeed or 125
+    arriveDistance = arriveDistance or 6
 
     local delta = targetPos - hrp.Position
     local dist2D = math.sqrt(delta.X * delta.X + delta.Z * delta.Z)
     if dist2D <= arriveDistance then
+        hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
         return true
     end
 
@@ -3123,6 +3125,12 @@ local function safeMoveTowards(targetPos, speed, arriveDistance)
 
     hum.WalkSpeed = speed
     hum:MoveTo(Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
+
+    local dir2D = Vector3.new(delta.X, 0, delta.Z)
+    if dir2D.Magnitude > 0.01 then
+        local unitDir = dir2D.Unit
+        hrp.AssemblyLinearVelocity = Vector3.new(unitDir.X * speed, hrp.AssemblyLinearVelocity.Y, unitDir.Z * speed)
+    end
     return false
 end
 
@@ -3283,7 +3291,7 @@ local function runAutomationStep()
         if not onTM then
             local mountPos = getMyTreadmillMount()
             if mountPos then
-                safeMoveTowards(mountPos, 40, 2)
+                safeMoveTowards(mountPos, S.TravelSpeed or 125, 2)
             end
         end
         return
@@ -3293,41 +3301,69 @@ local function runAutomationStep()
     if S.AutoDig then
         exitTreadmillIfOn()
 
+        local moveSpd = S.TravelSpeed or 125
+        local chosen = STAGE_DATA[S.TargetStage] or STAGE_DATA["Stage 1 (Beach Zone)"]
+        local minZ = chosen.minZ or 0
+        local maxZ = chosen.maxZ or 120
+
+        local function isInTargetStage(pos)
+            return pos and pos.Z >= minZ and pos.Z <= maxZ
+        end
+
         -- Check if carrying an egg
         local carryingEgg = LocalPlayer:GetAttribute("CarryingEggId")
         if carryingEgg then
-            UI:SetStatus("กำลังถือไข่! วาร์ปนำไข่กลับเล้า...")
+            UI:SetStatus("กำลังถือไข่! พุ่งนำไข่กลับเล้าด้วยความเร็วสูง...")
             local penSpawn = getMyPenSpawn()
-            local arrived = safeMoveTowards(penSpawn, 45, 6)
+            local arrived = safeMoveTowards(penSpawn, moveSpd, 8)
             if arrived or hrp.Position.Z <= -40 then
                 pcall(function()
                     PlaceEggRemote:FireServer(carryingEgg, penSpawn + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)))
                 end)
-                task.wait(0.3)
+                task.wait(0.25)
             end
             return
         end
 
-        -- Check if an egg is waiting to be picked up in WorldEggs
+        -- Purge any discovered markers outside the selected stage or expired (>15s)
+        local now = os.clock()
+        for id, m in pairs(activeDiscoveredEggs) do
+            if not isInTargetStage(m.pos) or (m.t and (now - m.t > 15)) then
+                activeDiscoveredEggs[id] = nil
+            end
+        end
+
+        -- If player is not yet inside the selected stage bounds, travel straight to the selected stage first!
+        if hrp.Position.Z < (minZ - 12) or hrp.Position.Z > (maxZ + 12) then
+            UI:SetStatus("กำลังพุ่งตรงไปยัง " .. chosen.name .. " (ข้ามโซนอื่น)...")
+            safeMoveTowards(Vector3.new(0, hrp.Position.Y, chosen.z), moveSpd, 10)
+            return
+        end
+
+        -- Check if an egg in the SELECTED STAGE is waiting to be picked up in WorldEggs
         local we = workspace:FindFirstChild("WorldEggs")
         local eggToSteal = nil
+        local bestEggDist = math.huge
         if we then
             for _, egg in ipairs(we:GetChildren()) do
                 if egg.Name == "Egg" and egg:IsA("Model") then
                     local prompt = egg:FindFirstChild("PickUp", true)
                     local primary = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart")
-                    if prompt and primary then
-                        eggToSteal = { model = egg, prompt = prompt, pos = primary.Position }
-                        break
+                    if prompt and primary and isInTargetStage(primary.Position) then
+                        local d = (primary.Position - hrp.Position).Magnitude
+                        if d < bestEggDist then
+                            bestEggDist = d
+                            eggToSteal = { model = egg, prompt = prompt, pos = primary.Position }
+                        end
                     end
                 end
             end
         end
 
         if eggToSteal then
-            UI:SetStatus("พบไข่ที่ขุดเสร็จแล้ว! กำลังเดินไปขโมย...")
-            local arrived = safeMoveTowards(eggToSteal.pos, 42, 6)
-            if arrived or (hrp.Position - eggToSteal.pos).Magnitude <= 8 then
+            UI:SetStatus("พบไข่ใน " .. chosen.name .. "! กำลังพุ่งไปขโมย...")
+            local arrived = safeMoveTowards(eggToSteal.pos, moveSpd, 6)
+            if arrived or (hrp.Position - eggToSteal.pos).Magnitude <= 9 then
                 if fireproximityprompt then
                     fireproximityprompt(eggToSteal.prompt)
                 else
@@ -3335,16 +3371,16 @@ local function runAutomationStep()
                     task.wait(eggToSteal.prompt.HoldDuration + 0.1)
                     eggToSteal.prompt:InputHoldEnd()
                 end
-                task.wait(0.4)
+                task.wait(0.35)
             end
             return
         end
 
-        -- Check active discovered egg markers
+        -- Check active discovered egg markers strictly inside the SELECTED STAGE
         local nearestMarker = nil
         local nearestDist = math.huge
         for id, m in pairs(activeDiscoveredEggs) do
-            if m.pos then
+            if m.pos and isInTargetStage(m.pos) then
                 local dist = (m.pos - hrp.Position).Magnitude
                 if dist < nearestDist then
                     nearestDist = dist
@@ -3353,24 +3389,28 @@ local function runAutomationStep()
             end
         end
 
-        -- Fallback: check workspace.ClientFx.Marker
+        -- Fallback: check workspace.ClientFx.Marker only if inside target stage
         if not nearestMarker then
             local cfx = workspace:FindFirstChild("ClientFx")
             if cfx then
-                local m = cfx:FindFirstChild("Marker")
-                if m and m.PrimaryPart then
-                    nearestMarker = { id = m:GetAttribute("EggId") or "Marker", pos = m.PrimaryPart.Position }
+                for _, m in ipairs(cfx:GetChildren()) do
+                    if m.Name == "Marker" and m.PrimaryPart and isInTargetStage(m.PrimaryPart.Position) then
+                        local d = (m.PrimaryPart.Position - hrp.Position).Magnitude
+                        if d < nearestDist then
+                            nearestDist = d
+                            nearestMarker = { id = m:GetAttribute("EggId") or "Marker", pos = m.PrimaryPart.Position }
+                        end
+                    end
                 end
             end
         end
 
         if nearestMarker then
-            -- Move to marker and dig!
-            local arrived = safeMoveTowards(nearestMarker.pos, 42, 7)
+            -- Move to marker in target stage and dig!
+            local arrived = safeMoveTowards(nearestMarker.pos, moveSpd, 7)
             if arrived or (hrp.Position - nearestMarker.pos).Magnitude <= 10 then
                 equipToolKind("Shovel")
-                local now = os.clock()
-                local delayTime = S.FastDig and 0.15 or 0.3
+                local delayTime = S.FastDig and 0.14 or 0.28
                 if now - lastDigActionTime >= delayTime then
                     lastDigActionTime = now
                     pcall(function()
@@ -3379,18 +3419,17 @@ local function runAutomationStep()
                 end
             end
         else
-            -- No marker: Equip Detector and patrol target stage!
+            -- No marker in target stage: Equip Detector and patrol target stage!
             equipToolKind("Detector")
             pcall(function()
                 ScanStart:FireServer()
             end)
 
-            local chosen = STAGE_DATA[S.TargetStage] or STAGE_DATA["Stage 1 (Beach Zone)"]
             local targetZ = chosen.z
-            local patrolX = scoutDirection * 25
+            local patrolX = scoutDirection * 28
 
-            UI:SetStatus("กำลังถือ Detector สแกนหาไข่ใน " .. chosen.name .. "...")
-            local arrived = safeMoveTowards(Vector3.new(patrolX, hrp.Position.Y, targetZ), 40, 8)
+            UI:SetStatus("กำลังสแกนหาไข่เฉพาะใน " .. chosen.name .. "...")
+            local arrived = safeMoveTowards(Vector3.new(patrolX, hrp.Position.Y, targetZ), moveSpd, 8)
             if arrived then
                 scoutDirection = -scoutDirection
             end
@@ -3642,7 +3681,20 @@ UIControls.TargetStage = farmSec:Dropdown({
     Default = S.TargetStage,
     Callback = function(choice)
         S.TargetStage = choice
+        table.clear(activeDiscoveredEggs)
         UI:SetStatus("ตั้งโซนเป้าหมาย: " .. tostring(choice))
+    end,
+})
+
+UIControls.TravelSpeed = farmSec:Slider({
+    Name = "ความเร็ววิ่งฟาร์ม (FARM TRAVEL SPEED)",
+    Min = 50,
+    Max = 160,
+    Default = S.TravelSpeed or 125,
+    Precision = 0,
+    Callback = function(val)
+        S.TravelSpeed = val
+        UI:SetStatus("ความเร็ววิ่งฟาร์ม: " .. tostring(val) .. " studs/s")
     end,
 })
 
@@ -3811,7 +3863,7 @@ tpSec:Button({
     Name = "เดินกลับเล้าของตัวเอง (WALK TO MY PEN)",
     Callback = function()
         exitTreadmillIfOn()
-        safeMoveTowards(getMyPenSpawn(), 50, 4)
+        safeMoveTowards(getMyPenSpawn(), S.TravelSpeed or 125, 4)
         UI:SetStatus("เดินกลับเล้าเรียบร้อย")
     end,
 })
@@ -3821,7 +3873,7 @@ tpSec:Button({
     Callback = function()
         local mount = getMyTreadmillMount()
         if mount then
-            safeMoveTowards(mount, 50, 2)
+            safeMoveTowards(mount, S.TravelSpeed or 125, 2)
             UI:SetStatus("เดินไปลู่วิ่งเรียบร้อย")
         end
     end,
@@ -3843,7 +3895,7 @@ tpSec:Button({
         exitTreadmillIfOn()
         local chosen = STAGE_DATA[selectedTpStage]
         if chosen then
-            safeMoveTowards(Vector3.new(0, 3, chosen.z), 50, 8)
+            safeMoveTowards(Vector3.new(0, 3, chosen.z), S.TravelSpeed or 125, 8)
             UI:SetStatus("เดินทางไป " .. chosen.name .. " เรียบร้อย")
         end
     end,
