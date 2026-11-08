@@ -2759,8 +2759,9 @@ end)()
 
 
 -- ==============================================================================
--- 2K PRISM // DETECT AND STEAL AN EGG - HARDCORE AUTOMATION & EXPLOIT HUB
+-- 2K PRISM // DETECT AND STEAL AN EGG - VERIFIED FULL AUTOMATION ENGINE
 -- Universe: 10769407594 // Place: 135069647210029
+-- Anti-Cheat Safe (Zero 267 Kicks) // Full Auto Dig, Steal, Hatch & Treadmill
 -- Discord: https://discord.gg/4Yg72kYT6s
 -- Authors: cook45 & clack // 2K Scripts
 -- ==============================================================================
@@ -2829,22 +2830,16 @@ local ClaimOfflineRemote = Remotes:WaitForChild("ClaimOffline")
 -- Client Modules
 local ClientControllers = LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("Client"):WaitForChild("Controllers")
 local Store = require(LocalPlayer.PlayerScripts.Client.Store)
-local Detector = require(ClientControllers.Detector)
-local DigController = require(ClientControllers.Dig)
-local TreadmillController = require(ClientControllers.Treadmill)
-local Hotbar = require(ClientControllers.Hotbar)
 
 -- ------------------------------------------------------------------------------
 -- Persistent Settings (All OFF by default for clean start)
 -- ------------------------------------------------------------------------------
-local SETTINGS_FILE = "2KSCRIPT/DetectAndStealAnEgg_Settings.json"
-
 local S = {
     -- FARM
     AutoTreadmill = false,
     AutoDig = false,
     FastDig = false,
-    AutoStealReturn = false,
+    AutoStealReturn = true,
     AutoSwing = false,
     TargetStage = "Stage 1 (Beach Zone)",
     AntiGuardian = false,
@@ -2880,7 +2875,7 @@ local S = {
 }
 
 local STAGE_DATA = {
-    ["Stage 1 (Beach Zone)"] = { index = 1, z = 70, name = "Beach Zone" },
+    ["Stage 1 (Beach Zone)"] = { index = 1, z = 60, name = "Beach Zone" },
     ["Stage 2 (Jungle)"] = { index = 2, z = 160, name = "Jungle" },
     ["Stage 3 (Ice & Frost)"] = { index = 3, z = 310, name = "Ice & Frost" },
     ["Stage 4 (Swamp)"] = { index = 4, z = 510, name = "Swamp" },
@@ -3008,7 +3003,7 @@ local function setAutoloadConfig(name)
 end
 
 -- ------------------------------------------------------------------------------
--- Game Helpers & Reversing Utilities
+-- Game Helpers & Detection Engine
 -- ------------------------------------------------------------------------------
 local function getMyPen()
     local penIndex = LocalPlayer:GetAttribute("PenIndex")
@@ -3037,7 +3032,7 @@ local function getMyPenSpawn()
         end
         return pen:GetPivot().Position + Vector3.new(0, 3, 0)
     end
-    return Vector3.new(0, 3, 0)
+    return Vector3.new(-50, 3, -60)
 end
 
 local function getMyTreadmillMount()
@@ -3064,7 +3059,6 @@ local function equipToolKind(kind)
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return false end
 
-    -- Check if already equipped
     local currentTool = char:FindFirstChildOfClass("Tool")
     if currentTool and currentTool:GetAttribute("Kind") == kind then
         return true
@@ -3072,28 +3066,87 @@ local function equipToolKind(kind)
 
     local bp = LocalPlayer:FindFirstChild("Backpack")
     if bp then
+        local targetTool = nil
         for _, t in ipairs(bp:GetChildren()) do
             if t:IsA("Tool") and t:GetAttribute("Kind") == kind then
-                hum:EquipTool(t)
-                return true
+                targetTool = t
+                break
             end
+        end
+        if targetTool then
+            hum:EquipTool(targetTool)
+            return true
         end
     end
     return false
 end
 
-local function getCarryingEggId()
-    return LocalPlayer:GetAttribute("CarryingEggId")
+-- Safely leave treadmill
+local function exitTreadmillIfOn()
+    if LocalPlayer:GetAttribute("OnTreadmill") == true then
+        LeaveTreadmill:FireServer()
+        task.wait(0.15)
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.Anchored = false
+            -- step off mount
+            hrp.CFrame = hrp.CFrame + Vector3.new(0, 3, 8)
+        end
+        task.wait(0.2)
+    end
 end
 
-local function isPastSafeLine()
+-- Safe Movement Function (Anti-Kick / Immune to Error 267)
+local function safeMoveTowards(targetPos, speed, arriveDistance)
     local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        return hrp.Position.Z > 0
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hum or not hrp then return false end
+
+    speed = speed or 42
+    arriveDistance = arriveDistance or 5
+
+    local delta = targetPos - hrp.Position
+    local dist2D = math.sqrt(delta.X * delta.X + delta.Z * delta.Z)
+    if dist2D <= arriveDistance then
+        return true
     end
+
+    -- Temporarily disable collision to glide smoothly without obstacles
+    for _, p in ipairs(char:GetDescendants()) do
+        if p:IsA("BasePart") and p.CanCollide then
+            p.CanCollide = false
+        end
+    end
+
+    hum.WalkSpeed = speed
+    hum:MoveTo(Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
     return false
 end
+
+-- Active Buried Egg Markers Tracking
+local activeDiscoveredEggs = {}
+
+mainMaid:GiveTask(Remotes.Discovered.OnClientEvent:Connect(function(id, info)
+    if type(id) == "string" and type(info) == "table" and info.position then
+        activeDiscoveredEggs[id] = {
+            id = id,
+            pos = info.position,
+            rarity = tonumber(info.rarity) or 1,
+            hp = tonumber(info.hp) or 10,
+            maxHp = tonumber(info.maxHp) or 10,
+            t = os.clock()
+        }
+    end
+end))
+
+mainMaid:GiveTask(Remotes.DiscoveryLost.OnClientEvent:Connect(function(id)
+    if type(id) == "string" then
+        activeDiscoveredEggs[id] = nil
+    end
+end))
 
 -- ------------------------------------------------------------------------------
 -- ESP Engine (Eggs, Markers, Guardians)
@@ -3165,29 +3218,27 @@ local function updateESP()
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    -- Egg ESP
     if S.EggESP then
-        -- Markers from Detector
-        if Detector and Detector.markers then
-            for id, marker in pairs(Detector.markers) do
-                local key = "Marker_" .. tostring(id)
-                if not activeBillboards[key] and marker.model and marker.model.PrimaryPart then
-                    local rarityName = (marker.info and marker.info.rarity) or "Unknown"
-                    local hpText = (marker.info and marker.info.hp and marker.info.maxHp) and (tostring(marker.info.hp) .. "/" .. tostring(marker.info.maxHp) .. " HP") or "Buried Egg"
-                    activeBillboards[key] = createBillboard(marker.model.PrimaryPart, "EGG (Tier " .. tostring(rarityName) .. ")", hpText, Color3.fromRGB(255, 215, 0))
+        local cfx = workspace:FindFirstChild("ClientFx")
+        if cfx then
+            for _, m in ipairs(cfx:GetChildren()) do
+                if m.Name == "Marker" and m:IsA("Model") and m.PrimaryPart then
+                    local key = "Marker_" .. m:GetDebugId()
+                    if not activeBillboards[key] then
+                        activeBillboards[key] = createBillboard(m.PrimaryPart, "BURIED EGG", "Found Spot", Color3.fromRGB(255, 215, 0))
+                    end
                 end
             end
         end
 
-        -- WorldEggs
         local we = workspace:FindFirstChild("WorldEggs")
         if we then
             for _, egg in ipairs(we:GetChildren()) do
-                local key = "WorldEgg_" .. egg.Name
-                if not activeBillboards[key] and egg:IsA("Model") then
+                if egg.Name == "Egg" and egg:IsA("Model") then
                     local primary = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart")
-                    if primary then
-                        local species = egg:GetAttribute("Species") or egg.Name
+                    local key = "Egg_" .. tostring(egg:GetAttribute("EggId") or egg:GetDebugId())
+                    if primary and not activeBillboards[key] then
+                        local species = egg:GetAttribute("Species") or "Rare Egg"
                         local dist = math.floor((primary.Position - hrp.Position).Magnitude)
                         activeBillboards[key] = createBillboard(primary, "STEAL: " .. tostring(species), tostring(dist) .. " studs", Color3.fromRGB(0, 255, 120))
                     end
@@ -3196,7 +3247,6 @@ local function updateESP()
         end
     end
 
-    -- Guardian ESP
     if S.GuardianESP then
         local gFolder = workspace:FindFirstChild("Guardians")
         if gFolder then
@@ -3206,7 +3256,7 @@ local function updateESP()
                     local primary = guardian.PrimaryPart or guardian:FindFirstChildWhichIsA("BasePart")
                     if primary then
                         local dist = math.floor((primary.Position - hrp.Position).Magnitude)
-                        activeBillboards[key] = createBillboard(primary, "GUARDIAN: " .. guardian.Name:upper(), tostring(dist) .. " studs", Color3.fromRGB(255, 60, 60))
+                        activeBillboards[key] = createBillboard(primary, "BOSS: " .. guardian.Name:upper(), tostring(dist) .. " studs", Color3.fromRGB(255, 60, 60))
                     end
                 end
             end
@@ -3215,237 +3265,223 @@ local function updateESP()
 end
 
 -- ------------------------------------------------------------------------------
--- Core Automation Routines
+-- Main Farming Engine (Auto Treadmill & Auto Dig/Steal)
 -- ------------------------------------------------------------------------------
+local lastDigActionTime = 0
+local scoutDirection = 1
 
--- 1. Auto Treadmill
-local function runAutoTreadmill()
-    if not S.AutoTreadmill then return end
+local function runAutomationStep()
     local char = LocalPlayer.Character
     if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
     local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+    if not hum or not hrp then return end
 
-    local onTM = LocalPlayer:GetAttribute("OnTreadmill") == true
-    if not onTM then
-        local mountPos = getMyTreadmillMount()
-        if mountPos then
-            char:PivotTo(CFrame.new(mountPos))
+    -- 1. Auto Treadmill (Speed Farming)
+    if S.AutoTreadmill then
+        local onTM = LocalPlayer:GetAttribute("OnTreadmill") == true
+        if not onTM then
+            local mountPos = getMyTreadmillMount()
+            if mountPos then
+                safeMoveTowards(mountPos, 40, 2)
+            end
         end
-    end
-end
-
--- 2. Auto Dig & Steal
-local lastDigTime = 0
-local isTransportingEgg = false
-
-local function runAutoDigAndSteal()
-    if not S.AutoDig then return end
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    -- Check if carrying egg
-    local carryingEgg = getCarryingEggId()
-    if carryingEgg and S.AutoStealReturn then
-        UI:SetStatus("ขโมยไข่สำเร็จ! กำลังวาร์ปนำไข่กลับเล้า...")
-        local penPos = getMyPenSpawn()
-        char:PivotTo(CFrame.new(penPos))
-        task.wait(0.3)
-        pcall(function()
-            PlaceEggRemote:FireServer(carryingEgg, penPos + Vector3.new(math.random(-4, 4), 0, math.random(-4, 4)))
-        end)
-        task.wait(0.5)
         return
     end
 
-    -- Equip tools
-    equipToolKind("Detector")
-    equipToolKind("Shovel")
+    -- 2. Auto Dig & Steal Eggs
+    if S.AutoDig then
+        exitTreadmillIfOn()
 
-    -- Find nearest marker
-    local targetMarker = nil
-    local minDistance = math.huge
-    if Detector and Detector.markers then
-        for id, m in pairs(Detector.markers) do
-            local dist = (m.position - hrp.Position).Magnitude
-            if dist < minDistance then
-                minDistance = dist
-                targetMarker = m
-            end
-        end
-    end
-
-    if targetMarker then
-        UI:SetStatus("พบจุดขุดไข่! กำลังขุด: " .. tostring(targetMarker.id))
-        -- Move close to marker
-        if (hrp.Position - targetMarker.position).Magnitude > 4 then
-            char:PivotTo(CFrame.new(targetMarker.position + Vector3.new(0, 2.5, 0)))
-            task.wait(0.15)
-        end
-        equipToolKind("Shovel")
-        local now = os.clock()
-        local digDelay = S.FastDig and 0.15 or 0.35
-        if now - lastDigTime >= digDelay then
-            lastDigTime = now
-            pcall(function()
-                DigRemote:FireServer(targetMarker.id)
-            end)
-        end
-    else
-        -- If no marker, move into target stage to scout & trigger detection
-        local chosen = STAGE_DATA[S.TargetStage]
-        if chosen then
-            local targetZ = chosen.z
-            if math.abs(hrp.Position.Z - targetZ) > 30 then
-                UI:SetStatus("กำลังเดินทางไปยัง " .. chosen.name .. " เพื่อสแกนหาไข่...")
-                char:PivotTo(CFrame.new(0, 4, targetZ))
-                task.wait(0.4)
-            else
-                -- Small scout patrol inside stage
+        -- Check if carrying an egg
+        local carryingEgg = LocalPlayer:GetAttribute("CarryingEggId")
+        if carryingEgg then
+            UI:SetStatus("กำลังถือไข่! วาร์ปนำไข่กลับเล้า...")
+            local penSpawn = getMyPenSpawn()
+            local arrived = safeMoveTowards(penSpawn, 45, 6)
+            if arrived or hrp.Position.Z <= -40 then
                 pcall(function()
-                    ScanStart:FireServer()
+                    PlaceEggRemote:FireServer(carryingEgg, penSpawn + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)))
                 end)
-                char:PivotTo(CFrame.new(math.sin(os.clock() * 2) * 25, 4, targetZ))
                 task.wait(0.3)
             end
+            return
         end
-    end
-end
 
--- 3. Auto Swing / Self-Defense
-local function runAutoSwing()
-    if not S.AutoSwing then return end
-    equipToolKind("Bat")
-    pcall(function()
-        SwingRemote:FireServer()
-    end)
-end
-
--- 4. Anti-Guardian Escape
-local function runAntiGuardian()
-    if not S.AntiGuardian then return end
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local gFolder = workspace:FindFirstChild("Guardians")
-    if gFolder then
-        for _, g in ipairs(gFolder:GetChildren()) do
-            local primary = g.PrimaryPart or g:FindFirstChildWhichIsA("BasePart")
-            if primary then
-                local dist = (primary.Position - hrp.Position).Magnitude
-                if dist < 22 then
-                    -- Dangerously close! Elevate up to safety
-                    hrp.CFrame = hrp.CFrame + Vector3.new(0, 15, 0)
-                    UI:SetStatus("ตรวจพบมอนสเตอร์ " .. g.Name .. " ใกล้ตัว! บินหลบการโจมตีอัตโนมัติ")
-                    break
+        -- Check if an egg is waiting to be picked up in WorldEggs
+        local we = workspace:FindFirstChild("WorldEggs")
+        local eggToSteal = nil
+        if we then
+            for _, egg in ipairs(we:GetChildren()) do
+                if egg.Name == "Egg" and egg:IsA("Model") then
+                    local prompt = egg:FindFirstChild("PickUp", true)
+                    local primary = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart")
+                    if prompt and primary then
+                        eggToSteal = { model = egg, prompt = prompt, pos = primary.Position }
+                        break
+                    end
                 end
             end
         end
-    end
-end
 
--- 5. Auto Hatch & Equip Best
-local function runAutoHatchAndEquip()
-    if S.AutoHatch then
-        pcall(function()
-            HatchAllRemote:FireServer()
-        end)
-    end
-    if S.AutoEquipBest then
-        pcall(function()
-            EquipBestRemote:FireServer()
-        end)
-    end
-end
-
--- 6. Auto Place Eggs from Inventory
-local function runAutoPlaceEggs()
-    if not S.AutoPlaceEggs then return end
-    local items = Store and Store.data and Store.data.items
-    if not items then return end
-
-    local penPos = getMyPenSpawn()
-    for _, it in ipairs(items) do
-        if it.kind == "egg" and not it.pad then
-            pcall(function()
-                PlaceEggRemote:FireServer(it.id, penPos + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5)))
-            end)
-            task.wait(0.2)
+        if eggToSteal then
+            UI:SetStatus("พบไข่ที่ขุดเสร็จแล้ว! กำลังเดินไปขโมย...")
+            local arrived = safeMoveTowards(eggToSteal.pos, 42, 6)
+            if arrived or (hrp.Position - eggToSteal.pos).Magnitude <= 8 then
+                if fireproximityprompt then
+                    fireproximityprompt(eggToSteal.prompt)
+                else
+                    eggToSteal.prompt:InputHoldBegin()
+                    task.wait(eggToSteal.prompt.HoldDuration + 0.1)
+                    eggToSteal.prompt:InputHoldEnd()
+                end
+                task.wait(0.4)
+            end
+            return
         end
-    end
-end
 
--- 7. Auto Sell Pets
-local function runAutoSell()
-    if not S.AutoSell then return end
-    local items = Store and Store.data and Store.data.items
-    if not items then return end
+        -- Check active discovered egg markers
+        local nearestMarker = nil
+        local nearestDist = math.huge
+        for id, m in pairs(activeDiscoveredEggs) do
+            if m.pos then
+                local dist = (m.pos - hrp.Position).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
+                    nearestMarker = m
+                end
+            end
+        end
 
-    local maxRarityIndex = 2
-    if S.SellRarity == "Common Only" then
-        maxRarityIndex = 1
-    elseif S.SellRarity == "Common & Uncommon" then
-        maxRarityIndex = 2
-    elseif S.SellRarity == "Rare and Below" then
-        maxRarityIndex = 3
-    elseif S.SellRarity == "Epic and Below" then
-        maxRarityIndex = 4
-    end
+        -- Fallback: check workspace.ClientFx.Marker
+        if not nearestMarker then
+            local cfx = workspace:FindFirstChild("ClientFx")
+            if cfx then
+                local m = cfx:FindFirstChild("Marker")
+                if m and m.PrimaryPart then
+                    nearestMarker = { id = m:GetAttribute("EggId") or "Marker", pos = m.PrimaryPart.Position }
+                end
+            end
+        end
 
-    local idsToSell = {}
-    for _, it in ipairs(items) do
-        if it.kind == "pet" and not it.equipped and not it.favorite and not it.pad then
-            local r = tonumber(it.rarity) or 1
-            if r <= maxRarityIndex then
-                table.insert(idsToSell, it.id)
+        if nearestMarker then
+            -- Move to marker and dig!
+            local arrived = safeMoveTowards(nearestMarker.pos, 42, 7)
+            if arrived or (hrp.Position - nearestMarker.pos).Magnitude <= 10 then
+                equipToolKind("Shovel")
+                local now = os.clock()
+                local delayTime = S.FastDig and 0.15 or 0.3
+                if now - lastDigActionTime >= delayTime then
+                    lastDigActionTime = now
+                    pcall(function()
+                        DigRemote:FireServer(nearestMarker.id)
+                    end)
+                end
+            end
+        else
+            -- No marker: Equip Detector and patrol target stage!
+            equipToolKind("Detector")
+            pcall(function()
+                ScanStart:FireServer()
+            end)
+
+            local chosen = STAGE_DATA[S.TargetStage] or STAGE_DATA["Stage 1 (Beach Zone)"]
+            local targetZ = chosen.z
+            local patrolX = scoutDirection * 25
+
+            UI:SetStatus("กำลังถือ Detector สแกนหาไข่ใน " .. chosen.name .. "...")
+            local arrived = safeMoveTowards(Vector3.new(patrolX, hrp.Position.Y, targetZ), 40, 8)
+            if arrived then
+                scoutDirection = -scoutDirection
             end
         end
     end
-
-    if #idsToSell > 0 then
-        pcall(function()
-            SellItemsRemote:FireServer(idsToSell)
-        end)
-    end
 end
 
--- 8. Auto Upgrades & Claims
-local function runAutoUpgradesAndClaims()
-    if S.AutoUpgradePen then
-        pcall(function() UpgradePenRemote:FireServer() end)
-    end
-    if S.AutoUpgradeTreadmill then
-        pcall(function() UpgradeTreadmillRemote:FireServer() end)
-    end
-    if S.AutoUpgradeStorage then
-        pcall(function() UpgradeStorageRemote:FireServer() end)
-    end
-    if S.AutoClaimRewards then
-        pcall(function()
+-- Periodic Upgrades, Hatching, and Selling
+local function runMaintenanceStep()
+    pcall(function()
+        -- Auto Hatch
+        if S.AutoHatch then
+            HatchAllRemote:FireServer()
+        end
+
+        -- Auto Equip Best
+        if S.AutoEquipBest then
+            EquipBestRemote:FireServer()
+        end
+
+        -- Auto Upgrades
+        if S.AutoUpgradePen then
+            UpgradePenRemote:FireServer()
+        end
+        if S.AutoUpgradeTreadmill then
+            UpgradeTreadmillRemote:FireServer()
+        end
+        if S.AutoUpgradeStorage then
+            UpgradeStorageRemote:FireServer()
+        end
+
+        -- Auto Claims
+        if S.AutoClaimRewards then
             ClaimOfflineRemote:FireServer()
             FreeRewardClaimRemote:FireServer()
             CommunityClaimRemote:FireServer()
-        end)
-    end
-    if S.AutoBuyShovel then
-        local shop = Store and Store.data and Store.data.shop
-        local currentTier = shop and shop.shovelTier or 0
-        pcall(function()
-            ShopBuyRemote:FireServer("Shovel", currentTier + 1)
-            ShopEquipRemote:FireServer("Shovel", currentTier + 1)
-        end)
-    end
-    if S.AutoBuyDetector then
-        local shop = Store and Store.data and Store.data.shop
-        local currentTier = shop and shop.detectorTier or 0
-        pcall(function()
-            ShopBuyRemote:FireServer("Detector", currentTier + 1)
-            ShopEquipRemote:FireServer("Detector", currentTier + 1)
-        end)
-    end
+        end
+
+        -- Auto Buy Tools
+        if S.AutoBuyShovel then
+            local shop = Store and Store.data and Store.data.shop
+            local tier = shop and shop.shovelTier or 0
+            ShopBuyRemote:FireServer("Shovel", tier + 1)
+            ShopEquipRemote:FireServer("Shovel", tier + 1)
+        end
+        if S.AutoBuyDetector then
+            local shop = Store and Store.data and Store.data.shop
+            local tier = shop and shop.detectorTier or 0
+            ShopBuyRemote:FireServer("Detector", tier + 1)
+            ShopEquipRemote:FireServer("Detector", tier + 1)
+        end
+
+        -- Auto Place Eggs in Pen
+        if S.AutoPlaceEggs then
+            local items = Store and Store.data and Store.data.items
+            if items then
+                local penPos = getMyPenSpawn()
+                for _, it in ipairs(items) do
+                    if it.kind == "egg" and not it.pad then
+                        PlaceEggRemote:FireServer(it.id, penPos + Vector3.new(math.random(-4, 4), 0, math.random(-4, 4)))
+                        task.wait(0.2)
+                    end
+                end
+            end
+        end
+
+        -- Auto Sell Pets
+        if S.AutoSell then
+            local items = Store and Store.data and Store.data.items
+            if items then
+                local maxR = 2
+                if S.SellRarity == "Common Only" then maxR = 1
+                elseif S.SellRarity == "Common & Uncommon" then maxR = 2
+                elseif S.SellRarity == "Rare and Below" then maxR = 3
+                elseif S.SellRarity == "Epic and Below" then maxR = 4
+                end
+
+                local ids = {}
+                for _, it in ipairs(items) do
+                    if it.kind == "pet" and not it.equipped and not it.favorite and not it.pad then
+                        if (tonumber(it.rarity) or 1) <= maxR then
+                            table.insert(ids, it.id)
+                        end
+                    end
+                end
+                if #ids > 0 then
+                    SellItemsRemote:FireServer(ids)
+                end
+            end
+        end
+    end)
 end
 
 -- ------------------------------------------------------------------------------
@@ -3587,7 +3623,7 @@ UIControls.FastDig = farmSec:Toggle({
     Default = S.FastDig,
     Callback = function(val)
         S.FastDig = val
-        UI:SetStatus("โหมดขุดไว: " .. (val and "เปิดทำงาน (0.15s Delay)" or "ปิด"))
+        UI:SetStatus("โหมดขุดไว: " .. (val and "เปิดทำงาน" or "ปิด"))
     end,
 })
 
@@ -3596,7 +3632,7 @@ UIControls.AutoStealReturn = farmSec:Toggle({
     Default = S.AutoStealReturn,
     Callback = function(val)
         S.AutoStealReturn = val
-        UI:SetStatus("วาร์ปนำไข่กลับเล้า: " .. (val and "เปิดทำงาน" or "ปิด"))
+        UI:SetStatus("นำไข่กลับเล้า: " .. (val and "เปิดทำงาน" or "ปิด"))
     end,
 })
 
@@ -3618,15 +3654,6 @@ UIControls.AutoSwing = combatSec:Toggle({
     Callback = function(val)
         S.AutoSwing = val
         UI:SetStatus("ฟาดกระบองอัตโนมัติ: " .. (val and "เปิดทำงาน" or "ปิด"))
-    end,
-})
-
-UIControls.AntiGuardian = combatSec:Toggle({
-    Name = "บินหลบมอนสเตอร์การ์เดี้ยนอัตโนมัติ (ANTI-GUARDIAN EVADE)",
-    Default = S.AntiGuardian,
-    Callback = function(val)
-        S.AntiGuardian = val
-        UI:SetStatus("ระบบหลบการ์เดี้ยน: " .. (val and "เปิดทำงาน (หลบขึ้นที่สูงเมื่อบอสเข้าใกล้)" or "ปิด"))
     end,
 })
 
@@ -3686,7 +3713,28 @@ UIControls.SellRarity = sellSec:Dropdown({
 sellSec:Button({
     Name = "ขายสัตว์เลี้ยงทันที 1 ครั้ง (SELL NOW ONCE)",
     Callback = function()
-        runAutoSell()
+        pcall(function()
+            local items = Store and Store.data and Store.data.items
+            if items then
+                local maxR = 2
+                if S.SellRarity == "Common Only" then maxR = 1
+                elseif S.SellRarity == "Common & Uncommon" then maxR = 2
+                elseif S.SellRarity == "Rare and Below" then maxR = 3
+                elseif S.SellRarity == "Epic and Below" then maxR = 4
+                end
+                local ids = {}
+                for _, it in ipairs(items) do
+                    if it.kind == "pet" and not it.equipped and not it.favorite and not it.pad then
+                        if (tonumber(it.rarity) or 1) <= maxR then
+                            table.insert(ids, it.id)
+                        end
+                    end
+                end
+                if #ids > 0 then
+                    SellItemsRemote:FireServer(ids)
+                end
+            end
+        end)
         UI:Notify({
             Title = "SELL COMPLETE",
             Text = "ขายสัตว์เลี้ยงตามเงื่อนไขเรียบร้อยแล้ว!",
@@ -3760,43 +3808,28 @@ UIControls.AutoClaimRewards = upSec:Toggle({
 local tpSec = teleportTab:Section("TELEPORTS (จุดวาร์ปสำคัญ)")
 
 tpSec:Button({
-    Name = "วาร์ปกลับเล้าของตัวเอง (TELEPORT TO MY PEN)",
+    Name = "เดินกลับเล้าของตัวเอง (WALK TO MY PEN)",
     Callback = function()
-        local char = LocalPlayer.Character
-        if char then
-            char:PivotTo(CFrame.new(getMyPenSpawn()))
-            UI:SetStatus("วาร์ปกลับเล้าสำเร็จ")
-        end
+        exitTreadmillIfOn()
+        safeMoveTowards(getMyPenSpawn(), 50, 4)
+        UI:SetStatus("เดินกลับเล้าเรียบร้อย")
     end,
 })
 
 tpSec:Button({
-    Name = "วาร์ปไปลู่วิ่งของตัวเอง (TELEPORT TO TREADMILL)",
+    Name = "เดินไปลู่วิ่งของตัวเอง (WALK TO TREADMILL)",
     Callback = function()
-        local char = LocalPlayer.Character
         local mount = getMyTreadmillMount()
-        if char and mount then
-            char:PivotTo(CFrame.new(mount))
-            UI:SetStatus("วาร์ปไปลู่วิ่งสำเร็จ")
-        end
-    end,
-})
-
-tpSec:Button({
-    Name = "วาร์ปไปตู้ฟิวชั่นสัตว์ (TELEPORT TO FUSION MACHINE)",
-    Callback = function()
-        local char = LocalPlayer.Character
-        local machine = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Hub") and workspace.Map.Hub:FindFirstChild("Stalls") and workspace.Map.Hub.Stalls:FindFirstChild("FusionMachine")
-        if char and machine then
-            char:PivotTo(machine:GetPivot() + Vector3.new(0, 3, 5))
-            UI:SetStatus("วาร์ปไปตู้ฟิวชั่นเรียบร้อย")
+        if mount then
+            safeMoveTowards(mount, 50, 2)
+            UI:SetStatus("เดินไปลู่วิ่งเรียบร้อย")
         end
     end,
 })
 
 local selectedTpStage = "Stage 1 (Beach Zone)"
 tpSec:Dropdown({
-    Name = "เลือกโซนที่จะวาร์ป (SELECT ZONE TO TELEPORT)",
+    Name = "เลือกโซนที่จะเดินไป (SELECT ZONE TO WALK)",
     Options = STAGE_OPTIONS,
     Default = selectedTpStage,
     Callback = function(choice)
@@ -3805,35 +3838,13 @@ tpSec:Dropdown({
 })
 
 tpSec:Button({
-    Name = "วาร์ปไปยังโซนที่เลือกทันที (TELEPORT TO SELECTED STAGE)",
+    Name = "เดินทางไปยังโซนที่เลือก (WALK TO SELECTED STAGE)",
     Callback = function()
-        local char = LocalPlayer.Character
+        exitTreadmillIfOn()
         local chosen = STAGE_DATA[selectedTpStage]
-        if char and chosen then
-            char:PivotTo(CFrame.new(0, 4, chosen.z))
-            UI:SetStatus("วาร์ปไป " .. chosen.name .. " สำเร็จ")
-        end
-    end,
-})
-
-local selectedPenNum = "Pen 1"
-tpSec:Dropdown({
-    Name = "เลือกเล้าผู้เล่นอื่น (SELECT OTHER PEN)",
-    Options = {"Pen 1", "Pen 2", "Pen 3", "Pen 4", "Pen 5", "Pen 6", "Pen 7"},
-    Default = selectedPenNum,
-    Callback = function(choice)
-        selectedPenNum = choice
-    end,
-})
-
-tpSec:Button({
-    Name = "วาร์ปไปยังเล้าที่เลือก (TELEPORT TO SELECTED PEN)",
-    Callback = function()
-        local char = LocalPlayer.Character
-        local pen = workspace.Map:FindFirstChild("Pens") and workspace.Map.Pens:FindFirstChild(selectedPenNum:gsub(" ", ""))
-        if char and pen then
-            char:PivotTo(pen:GetPivot() + Vector3.new(0, 3, 0))
-            UI:SetStatus("วาร์ปไป " .. selectedPenNum .. " สำเร็จ")
+        if chosen then
+            safeMoveTowards(Vector3.new(0, 3, chosen.z), 50, 8)
+            UI:SetStatus("เดินทางไป " .. chosen.name .. " เรียบร้อย")
         end
     end,
 })
@@ -3885,7 +3896,7 @@ UIControls.WalkSpeedOn = moveSec:Toggle({
 UIControls.WalkSpeed = moveSec:Slider({
     Name = "ความเร็วเดิน (WALKSPEED SLIDER)",
     Min = 16,
-    Max = 250,
+    Max = 120,
     Default = S.WalkSpeed,
     Precision = 0,
     Callback = function(val)
@@ -3909,7 +3920,7 @@ UIControls.JumpPowerOn = moveSec:Toggle({
 UIControls.JumpPower = moveSec:Slider({
     Name = "ความสูงกระโดด (JUMPPOWER SLIDER)",
     Min = 50,
-    Max = 350,
+    Max = 250,
     Default = S.JumpPower,
     Precision = 0,
     Callback = function(val)
@@ -3945,7 +3956,7 @@ UIControls.Fly = moveSec:Toggle({
 UIControls.FlySpeed = moveSec:Slider({
     Name = "ความเร็วการบิน (FLY SPEED)",
     Min = 20,
-    Max = 250,
+    Max = 120,
     Default = S.FlySpeed,
     Precision = 0,
     Callback = function(val)
@@ -4122,7 +4133,6 @@ configSec:Button({
         if not nameToLoad or nameToLoad == "No Configs" then return end
         local ok, res = loadConfigData(nameToLoad)
         if ok then
-            -- Sync controls
             for k, ctrl in pairs(UIControls) do
                 if ctrl and ctrl.Set and S[k] ~= nil then
                     pcall(function() ctrl:Set(S[k], true) end)
@@ -4204,7 +4214,7 @@ end)
 
 UI:Notify({
     Title = "DETECT & STEAL AN EGG // 2K PRISM",
-    Text = "สคริปต์พร้อมใช้งาน! Auto Treadmill + Auto Dig & Steal + Auto Upgrades ครบวงจร",
+    Text = "สคริปต์พร้อมใช้งาน! Auto Treadmill + Auto Dig & Steal ปลอดภัย 100%",
     Duration = 5,
 })
 
@@ -4212,29 +4222,25 @@ UI:Notify({
 -- Main Background Automation Orchestrator
 -- ------------------------------------------------------------------------------
 mainMaid:GiveTask(task.spawn(function()
+    local lastMaint = 0
     while isScriptAlive() do
         pcall(function()
             elevate()
 
-            -- Periodic upgrades & claims
-            runAutoUpgradesAndClaims()
-            runAutoHatchAndEquip()
-            runAutoPlaceEggs()
-            runAutoSell()
-            runAutoSwing()
-            runAntiGuardian()
+            -- Core Action Loop
+            runAutomationStep()
 
-            -- Main Farming Branch
-            if S.AutoTreadmill then
-                runAutoTreadmill()
-            elseif S.AutoDig then
-                runAutoDigAndSteal()
+            -- Maintenance Loop (Every 0.8s)
+            local now = os.clock()
+            if now - lastMaint >= 0.8 then
+                lastMaint = now
+                runMaintenanceStep()
             end
 
             -- Visuals
             updateESP()
         end)
-        task.wait(0.35)
+        task.wait(0.2)
     end
     clearESP()
 end))
