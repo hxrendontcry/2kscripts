@@ -2808,6 +2808,7 @@ local ScanStart = Remotes:WaitForChild("ScanStart")
 local ScanStop = Remotes:WaitForChild("ScanStop")
 local DigRemote = Remotes:WaitForChild("Dig")
 local DropRemote = Remotes:WaitForChild("Drop")
+local SetSlowModeRemote = Remotes:FindFirstChild("SetSlowMode")
 local LeaveTreadmill = Remotes:WaitForChild("LeaveTreadmill")
 local SwingRemote = Remotes:WaitForChild("Swing")
 local PlaceEggRemote = Remotes:WaitForChild("PlaceEgg")
@@ -2830,6 +2831,11 @@ local ClaimOfflineRemote = Remotes:WaitForChild("ClaimOffline")
 -- Client Modules
 local ClientControllers = LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("Client"):WaitForChild("Controllers")
 local Store = require(LocalPlayer.PlayerScripts.Client.Store)
+local Formulas = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Formulas"))
+local DetectorController = nil
+pcall(function()
+    DetectorController = require(ClientControllers:WaitForChild("Detector"))
+end)
 
 -- ------------------------------------------------------------------------------
 -- Persistent Settings (All OFF by default for clean start)
@@ -2842,7 +2848,7 @@ local S = {
     AutoStealReturn = true,
     AutoSwing = false,
     TargetStage = "Stage 1 (Beach Zone)",
-    TravelSpeed = 125,
+    TravelSpeed = 100,
     AntiGuardian = false,
 
     -- PETS & EGGS
@@ -2858,6 +2864,7 @@ local S = {
     AutoUpgradeStorage = false,
     AutoBuyShovel = false,
     AutoBuyDetector = false,
+    AutoBuyTrail = false,
     AutoClaimRewards = false,
 
     -- ESP & VISUALS
@@ -3033,7 +3040,20 @@ local function getMyPenSpawn()
         end
         return pen:GetPivot().Position + Vector3.new(0, 3, 0)
     end
-    return Vector3.new(-50, 3, -60)
+    return Vector3.new(0, 3, -60)
+end
+
+local function getMyPenBoxCenter()
+    local pen = getMyPen()
+    if pen then
+        local penLvl = tonumber(LocalPlayer:GetAttribute("PenLevel")) or 1
+        local ok, _, v2, v3 = pcall(Formulas.penBox, penLvl)
+        if ok and v2 and v3 then
+            return (pen:GetPivot() * CFrame.new(0, 0, (v2 + v3) / 2)).Position
+        end
+        return pen:GetPivot().Position
+    end
+    return Vector3.new(0, 0, -110)
 end
 
 local function getMyTreadmillMount()
@@ -3082,55 +3102,63 @@ local function equipToolKind(kind)
     return false
 end
 
--- Safely leave treadmill
+-- Safely leave treadmill without CFrame teleports (100% immune to Error 267)
 local function exitTreadmillIfOn()
     if LocalPlayer:GetAttribute("OnTreadmill") == true then
         LeaveTreadmill:FireServer()
-        task.wait(0.15)
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.Anchored = false
-            -- step off mount
-            hrp.CFrame = hrp.CFrame + Vector3.new(0, 3, 8)
+        local t0 = os.clock()
+        while LocalPlayer:GetAttribute("OnTreadmill") == true and (os.clock() - t0) < 1.5 do
+            task.wait(0.05)
         end
-        task.wait(0.2)
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hum and hrp then
+            -- Walk straight out in +Z away from the treadmill mount
+            local escapePos = Vector3.new(hrp.Position.X - 7, hrp.Position.Y, -35)
+            local t1 = os.clock()
+            while (os.clock() - t1) < 0.8 and hrp.Position.Z < -45 do
+                hum:MoveTo(escapePos)
+                task.wait(0.1)
+            end
+        end
     end
 end
 
--- Safe Movement Function (Anti-Kick / Immune to Error 267)
-local function safeMoveTowards(targetPos, speed, arriveDistance)
+-- Safe Movement Function (100% Server-Synced Speed & Smart Waypoint Routing / Zero Error 267)
+local function safeMoveTowards(targetPos, _, arriveDistance)
     local char = LocalPlayer.Character
     if not char then return false end
     local hum = char:FindFirstChildOfClass("Humanoid")
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hum or not hrp then return false end
 
-    speed = speed or S.TravelSpeed or 125
     arriveDistance = arriveDistance or 6
+
+    -- Ensure SlowMode is disabled so the server grants full physical speed
+    if LocalPlayer:GetAttribute("SlowMode") == true and SetSlowModeRemote then
+        pcall(function()
+            SetSlowModeRemote:FireServer(false)
+        end)
+    end
 
     local delta = targetPos - hrp.Position
     local dist2D = math.sqrt(delta.X * delta.X + delta.Z * delta.Z)
     if dist2D <= arriveDistance then
-        hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
         return true
     end
 
-    -- Temporarily disable collision to glide smoothly without obstacles
-    for _, p in ipairs(char:GetDescendants()) do
-        if p:IsA("BasePart") and p.CanCollide then
-            p.CanCollide = false
-        end
+    -- Smart routing to avoid Treadmill re-lock and Hub Boundary Walls (|X| > 78 at Z = 0)
+    local nextWaypoint = targetPos
+    if not S.AutoTreadmill and hrp.Position.Z < -45 and targetPos.Z > -40 then
+        nextWaypoint = Vector3.new(hrp.Position.X - 7, hrp.Position.Y, -35)
+    elseif hrp.Position.Z < -5 and targetPos.Z >= 0 and math.abs(hrp.Position.X) > 62 then
+        nextWaypoint = Vector3.new(0, hrp.Position.Y, -15)
+    elseif hrp.Position.Z > 0 and targetPos.Z < -15 and math.abs(targetPos.X) > 62 then
+        nextWaypoint = Vector3.new(0, hrp.Position.Y, -15)
     end
 
-    hum.WalkSpeed = speed
-    hum:MoveTo(Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
-
-    local dir2D = Vector3.new(delta.X, 0, delta.Z)
-    if dir2D.Magnitude > 0.01 then
-        local unitDir = dir2D.Unit
-        hrp.AssemblyLinearVelocity = Vector3.new(unitDir.X * speed, hrp.AssemblyLinearVelocity.Y, unitDir.Z * speed)
-    end
+    hum:MoveTo(Vector3.new(nextWaypoint.X, hrp.Position.Y, nextWaypoint.Z))
     return false
 end
 
@@ -3313,29 +3341,45 @@ local function runAutomationStep()
         -- Check if carrying an egg
         local carryingEgg = LocalPlayer:GetAttribute("CarryingEggId")
         if carryingEgg then
-            UI:SetStatus("กำลังถือไข่! พุ่งนำไข่กลับเล้าด้วยความเร็วสูง...")
-            local penSpawn = getMyPenSpawn()
-            local arrived = safeMoveTowards(penSpawn, moveSpd, 8)
-            if arrived or hrp.Position.Z <= -40 then
+            UI:SetStatus("กำลังถือไข่! วิ่งกลับข้ามเส้น Safe Line เข้าเล้า...")
+            local safeHubTarget = Vector3.new(0, hrp.Position.Y, -12)
+            local arrived = safeMoveTowards(safeHubTarget, moveSpd, 4)
+            if arrived or hrp.Position.Z <= -5 then
+                local penBoxPos = getMyPenBoxCenter()
+                safeMoveTowards(penBoxPos, moveSpd, 6)
                 pcall(function()
-                    PlaceEggRemote:FireServer(carryingEgg, penSpawn + Vector3.new(math.random(-3, 3), 0, math.random(-3, 3)))
+                    PlaceEggRemote:FireServer(carryingEgg, penBoxPos + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2)))
                 end)
                 task.wait(0.25)
             end
             return
         end
 
-        -- Purge any discovered markers outside the selected stage or expired (>15s)
+        -- Sync live markers from game's DetectorController.markers
         local now = os.clock()
+        if DetectorController and type(DetectorController.markers) == "table" then
+            for id, m in pairs(DetectorController.markers) do
+                if m and m.position and isInTargetStage(m.position) then
+                    activeDiscoveredEggs[id] = {
+                        id = id,
+                        pos = m.position,
+                        t = now,
+                    }
+                end
+            end
+        end
+
+        -- Purge any discovered markers outside the selected stage or expired (>15s)
         for id, m in pairs(activeDiscoveredEggs) do
-            if not isInTargetStage(m.pos) or (m.t and (now - m.t > 15)) then
+            local stillExists = (DetectorController and DetectorController.markers and DetectorController.markers[id] ~= nil)
+            if not isInTargetStage(m.pos) or (not stillExists and m.t and (now - m.t > 12)) then
                 activeDiscoveredEggs[id] = nil
             end
         end
 
         -- If player is not yet inside the selected stage bounds, travel straight to the selected stage first!
         if hrp.Position.Z < (minZ - 12) or hrp.Position.Z > (maxZ + 12) then
-            UI:SetStatus("กำลังพุ่งตรงไปยัง " .. chosen.name .. " (ข้ามโซนอื่น)...")
+            UI:SetStatus("กำลังวิ่งตรงไปยัง " .. chosen.name .. " (ข้ามโซนอื่น)...")
             safeMoveTowards(Vector3.new(0, hrp.Position.Y, chosen.z), moveSpd, 10)
             return
         end
@@ -3468,7 +3512,7 @@ local function runMaintenanceStep()
             CommunityClaimRemote:FireServer()
         end
 
-        -- Auto Buy Tools
+        -- Auto Buy Tools & Trails
         if S.AutoBuyShovel then
             local shop = Store and Store.data and Store.data.shop
             local tier = shop and shop.shovelTier or 0
@@ -3481,16 +3525,25 @@ local function runMaintenanceStep()
             ShopBuyRemote:FireServer("Detector", tier + 1)
             ShopEquipRemote:FireServer("Detector", tier + 1)
         end
+        if S.AutoBuyTrail then
+            local shop = Store and Store.data and Store.data.shop
+            local tier = shop and shop.trail or 1
+            ShopBuyRemote:FireServer("Trail", tier + 1)
+            ShopEquipRemote:FireServer("Trail", tier + 1)
+        end
 
-        -- Auto Place Eggs in Pen
+        -- Auto Place Eggs in Pen (Uses HoldItem + PenBoxCenter for 100% pad placement)
         if S.AutoPlaceEggs then
             local items = Store and Store.data and Store.data.items
             if items then
-                local penPos = getMyPenSpawn()
+                local penBoxPos = getMyPenBoxCenter()
                 for _, it in ipairs(items) do
                     if it.kind == "egg" and not it.pad then
-                        PlaceEggRemote:FireServer(it.id, penPos + Vector3.new(math.random(-4, 4), 0, math.random(-4, 4)))
+                        HoldItemRemote:FireServer(it.id)
                         task.wait(0.2)
+                        PlaceEggRemote:FireServer(it.id, penBoxPos + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2)))
+                        task.wait(0.25)
+                        break
                     end
                 end
             end
@@ -3845,6 +3898,15 @@ UIControls.AutoBuyDetector = upSec:Toggle({
     end,
 })
 
+UIControls.AutoBuyTrail = upSec:Toggle({
+    Name = "ซื้อและสวมใส่ Trail เพิ่มตัวคูณความเร็วอัตโนมัติ (AUTO BUY BEST TRAIL)",
+    Default = S.AutoBuyTrail,
+    Callback = function(val)
+        S.AutoBuyTrail = val
+        UI:SetStatus("ซื้อ Trail อัตโนมัติ: " .. (val and "เปิดทำงาน" or "ปิด"))
+    end,
+})
+
 UIControls.AutoClaimRewards = upSec:Toggle({
     Name = "รับของขวัญฟรี & เงินออฟไลน์อัตโนมัติ (AUTO CLAIM ALL REWARDS)",
     Default = S.AutoClaimRewards,
@@ -3940,7 +4002,9 @@ UIControls.WalkSpeedOn = moveSec:Toggle({
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if hum and not val then
-            hum.WalkSpeed = 16
+            local spd = tonumber(LocalPlayer:GetAttribute("Speed")) or 10
+            local ok, phys = pcall(Formulas.physicalSpeed, spd)
+            hum.WalkSpeed = (ok and phys) or 32
         end
     end,
 })
