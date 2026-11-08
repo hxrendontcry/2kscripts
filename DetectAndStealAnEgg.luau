@@ -2848,12 +2848,14 @@ local S = {
     AutoStealReturn = true,
     AutoSwing = false,
     TargetStage = "Stage 1 (Beach Zone)",
+    EggRarityFilter = "All Rarities (ทุกระดับ)",
     AntiGuardian = false,
 
     -- PETS & EGGS
     AutoHatch = false,
     AutoEquipBest = false,
     AutoPlaceEggs = false,
+    PlaceRarityFilter = "Highest Rarity First (ระดับสูงสุดก่อน)",
     AutoSell = false,
     SellRarity = "Common & Uncommon",
 
@@ -2913,6 +2915,44 @@ local RARITY_SELL_OPTIONS = {
     "Rare and Below",
     "Epic and Below",
 }
+
+local EGG_STEAL_RARITY_OPTIONS = {
+    "All Rarities (ทุกระดับ)",
+    "Uncommon+ (ระดับ 2 ขึ้นไป)",
+    "Rare+ (ระดับ 3 ขึ้นไป)",
+    "Epic+ (ระดับ 4 ขึ้นไป)",
+    "Legendary+ (ระดับ 5 ขึ้นไป)",
+    "Mythic+ (ระดับ 6 ขึ้นไป)",
+    "Secret+ (ระดับ 7 ขึ้นไป)",
+    "Cosmic+ (ระดับ 8 ขึ้นไป)",
+    "Eternal+ (ระดับ 9 ขึ้นไป)",
+}
+
+local EGG_PLACE_RARITY_OPTIONS = {
+    "Highest Rarity First (ระดับสูงสุดก่อน)",
+    "All Rarities (ทุกระดับ)",
+    "Uncommon+ (ระดับ 2 ขึ้นไป)",
+    "Rare+ (ระดับ 3 ขึ้นไป)",
+    "Epic+ (ระดับ 4 ขึ้นไป)",
+    "Legendary+ (ระดับ 5 ขึ้นไป)",
+    "Mythic+ (ระดับ 6 ขึ้นไป)",
+    "Secret+ (ระดับ 7 ขึ้นไป)",
+}
+
+local function getRarityMinLevel(choice)
+    if not choice or choice:find("All") or choice:find("Highest") then
+        return 1
+    elseif choice:find("Uncommon") then return 2
+    elseif choice:find("Rare") then return 3
+    elseif choice:find("Epic") then return 4
+    elseif choice:find("Legendary") then return 5
+    elseif choice:find("Mythic") then return 6
+    elseif choice:find("Secret") then return 7
+    elseif choice:find("Cosmic") then return 8
+    elseif choice:find("Eternal") then return 9
+    end
+    return 1
+end
 
 -- ------------------------------------------------------------------------------
 -- Config Management (Save, Load, Overwrite, Delete, Refresh, Auto-load)
@@ -3355,12 +3395,15 @@ local function runAutomationStep()
 
         -- Sync live markers from game's DetectorController.markers
         local now = os.clock()
+        local minDigRarity = getRarityMinLevel(S.EggRarityFilter)
         if DetectorController and type(DetectorController.markers) == "table" then
             for id, m in pairs(DetectorController.markers) do
                 if m and m.position and isInTargetStage(m.position) then
+                    local r = (m.info and tonumber(m.info.rarity)) or (m.model and tonumber(m.model:GetAttribute("Rarity"))) or 1
                     activeDiscoveredEggs[id] = {
                         id = id,
                         pos = m.position,
+                        rarity = r,
                         t = now,
                     }
                 end
@@ -3382,7 +3425,7 @@ local function runAutomationStep()
             return
         end
 
-        -- Check if an egg in the SELECTED STAGE is waiting to be picked up in WorldEggs
+        -- Check if an egg in the SELECTED STAGE matching RARITY is waiting to be picked up in WorldEggs
         local we = workspace:FindFirstChild("WorldEggs")
         local eggToSteal = nil
         local bestEggDist = math.huge
@@ -3392,10 +3435,21 @@ local function runAutomationStep()
                     local prompt = egg:FindFirstChild("PickUp", true)
                     local primary = egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart")
                     if prompt and primary and isInTargetStage(primary.Position) then
-                        local d = (primary.Position - hrp.Position).Magnitude
-                        if d < bestEggDist then
-                            bestEggDist = d
-                            eggToSteal = { model = egg, prompt = prompt, pos = primary.Position }
+                        local eggRarity = tonumber(egg:GetAttribute("Rarity"))
+                        if not eggRarity then
+                            local eggId = egg:GetAttribute("EggId")
+                            if eggId and activeDiscoveredEggs[eggId] then
+                                eggRarity = activeDiscoveredEggs[eggId].rarity
+                            end
+                        end
+                        eggRarity = eggRarity or 1
+
+                        if eggRarity >= minDigRarity then
+                            local d = (primary.Position - hrp.Position).Magnitude
+                            if d < bestEggDist then
+                                bestEggDist = d
+                                eggToSteal = { model = egg, prompt = prompt, pos = primary.Position }
+                            end
                         end
                     end
                 end
@@ -3418,11 +3472,12 @@ local function runAutomationStep()
             return
         end
 
-        -- Check active discovered egg markers strictly inside the SELECTED STAGE
+        -- Check active discovered egg markers strictly inside the SELECTED STAGE matching RARITY
         local nearestMarker = nil
         local nearestDist = math.huge
         for id, m in pairs(activeDiscoveredEggs) do
-            if m.pos and isInTargetStage(m.pos) then
+            local r = tonumber(m.rarity) or 1
+            if r >= minDigRarity and m.pos and isInTargetStage(m.pos) then
                 local dist = (m.pos - hrp.Position).Magnitude
                 if dist < nearestDist then
                     nearestDist = dist
@@ -3437,10 +3492,13 @@ local function runAutomationStep()
             if cfx then
                 for _, m in ipairs(cfx:GetChildren()) do
                     if m.Name == "Marker" and m.PrimaryPart and isInTargetStage(m.PrimaryPart.Position) then
-                        local d = (m.PrimaryPart.Position - hrp.Position).Magnitude
-                        if d < nearestDist then
-                            nearestDist = d
-                            nearestMarker = { id = m:GetAttribute("EggId") or "Marker", pos = m.PrimaryPart.Position }
+                        local r = tonumber(m:GetAttribute("Rarity")) or 1
+                        if r >= minDigRarity then
+                            local d = (m.PrimaryPart.Position - hrp.Position).Magnitude
+                            if d < nearestDist then
+                                nearestDist = d
+                                nearestMarker = { id = m:GetAttribute("EggId") or "Marker", pos = m.PrimaryPart.Position, rarity = r }
+                            end
                         end
                     end
                 end
@@ -3534,15 +3592,26 @@ local function runMaintenanceStep()
         if S.AutoPlaceEggs then
             local items = Store and Store.data and Store.data.items
             if items then
-                local penBoxPos = getMyPenBoxCenter()
+                local minPlaceRarity = getRarityMinLevel(S.PlaceRarityFilter)
+                local unplacedEggs = {}
                 for _, it in ipairs(items) do
-                    if it.kind == "egg" and not it.pad then
-                        HoldItemRemote:FireServer(it.id)
-                        task.wait(0.2)
-                        PlaceEggRemote:FireServer(it.id, penBoxPos + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2)))
-                        task.wait(0.25)
-                        break
+                    if it.kind == "egg" and not it.pad and (tonumber(it.rarity) or 1) >= minPlaceRarity then
+                        table.insert(unplacedEggs, it)
                     end
+                end
+
+                -- Sort highest rarity first by default
+                table.sort(unplacedEggs, function(a, b)
+                    return (tonumber(a.rarity) or 1) > (tonumber(b.rarity) or 1)
+                end)
+
+                if #unplacedEggs > 0 then
+                    local penBoxPos = getMyPenBoxCenter()
+                    local chosenEgg = unplacedEggs[1]
+                    HoldItemRemote:FireServer(chosenEgg.id)
+                    task.wait(0.2)
+                    PlaceEggRemote:FireServer(chosenEgg.id, penBoxPos + Vector3.new(math.random(-2, 2), 0, math.random(-2, 2)))
+                    task.wait(0.25)
                 end
             end
         end
@@ -3737,6 +3806,16 @@ UIControls.TargetStage = farmSec:Dropdown({
     end,
 })
 
+UIControls.EggRarityFilter = farmSec:Dropdown({
+    Name = "เลือกระดับไข่ขั้นต่ำที่จะขุดและเก็บ (MIN DIG & STEAL RARITY)",
+    Options = EGG_STEAL_RARITY_OPTIONS,
+    Default = S.EggRarityFilter,
+    Callback = function(choice)
+        S.EggRarityFilter = choice
+        UI:SetStatus("ตั้งระดับไข่ที่จะเก็บ: " .. tostring(choice))
+    end,
+})
+
 local combatSec = farmTab:Section("COMBAT & DEFENSE (การต่อสู้ & ป้องกันตัว)")
 
 UIControls.AutoSwing = combatSec:Toggle({
@@ -3777,6 +3856,16 @@ UIControls.AutoPlaceEggs = petSec:Toggle({
     Callback = function(val)
         S.AutoPlaceEggs = val
         UI:SetStatus("วางไข่ในเล้าอัตโนมัติ: " .. (val and "เปิดทำงาน" or "ปิด"))
+    end,
+})
+
+UIControls.PlaceRarityFilter = petSec:Dropdown({
+    Name = "เลือกระดับไข่ที่จะวางในเล้า (MIN PLACE IN PEN RARITY)",
+    Options = EGG_PLACE_RARITY_OPTIONS,
+    Default = S.PlaceRarityFilter,
+    Callback = function(choice)
+        S.PlaceRarityFilter = choice
+        UI:SetStatus("ตั้งระดับไข่ที่จะวางในเล้า: " .. tostring(choice))
     end,
 })
 
