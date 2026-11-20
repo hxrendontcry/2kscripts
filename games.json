@@ -203,5 +203,19 @@
     "status": "active",
     "version": "1.0",
     "description": "Auto Treadmill Speed Farm, Auto Dig & Steal Eggs, Fast Instant Dig, Auto Hatch & Equip Best, Auto Sell Pets, Auto Upgrades & Claims"
+  },
+  {
+    "id": "ttd-legacy",
+    "name": "LEGACY | Game (TTD Legacy) 🚽",
+    "universeIds": [
+      4778845442
+    ],
+    "placeIds": [
+      131703399727686
+    ],
+    "scriptUrl": "https://raw.githubusercontent.com/hxrendontcry/2kscripts/main/TwoK_TTDLegacy_Hub.luau",
+    "status": "active",
+    "version": "1.0",
+    "description": "2K PRISM UI • Auto Vote Difficulty, Auto Skip Wave, Smart Auto Place along Route, Auto Upgrade Troops, Auto Play Again & Return Lobby, Anti-AFK"
   }
 ]
